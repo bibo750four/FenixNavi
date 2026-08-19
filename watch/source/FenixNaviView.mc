@@ -240,12 +240,14 @@ class FenixNaviView extends WatchUi.View {
     //! into a drawArrow angle (0=up, 90=right, 180=down, 270=left).
     function getArrowAngle(turnAngle) {
         if (turnAngle == null) { return 0; }
-        var angle = turnAngle.toFloat();
+        // Convert to an integer Number first: the % operator in Monkey C throws
+        // an exception when applied to a Float/Double, so we normalize on a Number.
+        var angle = turnAngle.toNumber();
         // Normalize to 0..360
         angle = angle % 360;
         if (angle < 0) { angle += 360; }
         // Near 180 => U-turn (point down)
         if (angle > 150 && angle < 210) { return 180; }
-        return angle;
+        return angle.toFloat();
     }
 }
