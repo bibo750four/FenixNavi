@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>FenixNavi</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- Background modes: audio and location for navigation -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>audio</string>
+    </array>
+
+    <!-- Location usage descriptions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>FenixNavi needs your location to provide turn-by-turn navigation to your Garmin watch.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>FenixNavi needs background location access to continue navigation while your phone is locked or in your pocket.</string>
+
+    <!-- Bluetooth usage (for Garmin Connect IQ communication) -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>FenixNavi uses Bluetooth to send navigation instructions to your Garmin watch.</string>
+
+    <!-- Garmin Connect Mobile URL scheme for device communication -->
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>gcm-ciq</string>
+        <string>garminconnect</string>
+    </array>
+
+    <!-- URL scheme for Garmin Connect Mobile to return to FenixNavi -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>fenixnavi</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.fenixnavi.app</string>
+        </dict>
+    </array>
+
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>location-services</string>
+        <string>bluetooth-le</string>
+    </array>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+</dict>
+</plist>

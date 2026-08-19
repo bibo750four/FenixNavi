@@ -1,0 +1,381 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2F3E1547981B7FEE4852A6E3 /* FenixNaviApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE604A1E15C92F9089F8E34 /* FenixNaviApp.swift */; };
+		416A063035F58CBD51456410 /* NavigationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB28CCBCC3404BB3C266C0E9 /* NavigationEngine.swift */; };
+		4C55247BDD67EDC773560250 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC91D6B69A73F7E47FB913B /* ContentView.swift */; };
+		59E812FD80FBB72AEAD602C1 /* ConnectIQ.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E50F5037F8E9CAD6C73B7A7F /* ConnectIQ.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5FA908E1B1E034CB8821BE40 /* NavigationStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85554D9766C46BE7919F498 /* NavigationStep.swift */; };
+		77A0EF94DFA03E7B2D756B84 /* ConnectIQ.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E50F5037F8E9CAD6C73B7A7F /* ConnectIQ.framework */; };
+		977438D9D37AE590650E249C /* RoutingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46EE4E24538B3FBC8687513 /* RoutingService.swift */; };
+		AFBB67AC6296F0024685B551 /* GarminBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9107AAECB6564324E23FF4 /* GarminBridge.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9A4678012C57A04A542DE4D9 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				59E812FD80FBB72AEAD602C1 /* ConnectIQ.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0DC91D6B69A73F7E47FB913B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		60F434C49FC9C5C7E06A636F /* FenixNavi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FenixNavi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB28CCBCC3404BB3C266C0E9 /* NavigationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationEngine.swift; sourceTree = "<group>"; };
+		B46EE4E24538B3FBC8687513 /* RoutingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingService.swift; sourceTree = "<group>"; };
+		CBE604A1E15C92F9089F8E34 /* FenixNaviApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FenixNaviApp.swift; sourceTree = "<group>"; };
+		CD9107AAECB6564324E23FF4 /* GarminBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarminBridge.swift; sourceTree = "<group>"; };
+		E50F5037F8E9CAD6C73B7A7F /* ConnectIQ.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ConnectIQ.framework; path = Frameworks/ConnectIQ.framework; sourceTree = "<group>"; };
+		E85554D9766C46BE7919F498 /* NavigationStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationStep.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B6AF1127F431468E31B60D2B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				77A0EF94DFA03E7B2D756B84 /* ConnectIQ.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		6A6FA39E0A2ECB6B9CA64A0F = {
+			isa = PBXGroup;
+			children = (
+				D0D48123813BF6A412D59D84 /* FenixNavi */,
+				CF3BE0061130C5662DE6BBC2 /* Frameworks */,
+				B49B57C8E5551153B4DF3DEA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9D175C30F7BB0B8EF2B73067 /* GarminBridge */ = {
+			isa = PBXGroup;
+			children = (
+				CD9107AAECB6564324E23FF4 /* GarminBridge.swift */,
+			);
+			path = GarminBridge;
+			sourceTree = "<group>";
+		};
+		B49B57C8E5551153B4DF3DEA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				60F434C49FC9C5C7E06A636F /* FenixNavi.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CF3BE0061130C5662DE6BBC2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E50F5037F8E9CAD6C73B7A7F /* ConnectIQ.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D0D48123813BF6A412D59D84 /* FenixNavi */ = {
+			isa = PBXGroup;
+			children = (
+				0DC91D6B69A73F7E47FB913B /* ContentView.swift */,
+				CBE604A1E15C92F9089F8E34 /* FenixNaviApp.swift */,
+				9D175C30F7BB0B8EF2B73067 /* GarminBridge */,
+				FFA55457D991BBED58DA2C74 /* Models */,
+				DDC2B1785A29BDA81F222B0B /* Navigation */,
+			);
+			path = FenixNavi;
+			sourceTree = "<group>";
+		};
+		DDC2B1785A29BDA81F222B0B /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				AB28CCBCC3404BB3C266C0E9 /* NavigationEngine.swift */,
+				B46EE4E24538B3FBC8687513 /* RoutingService.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		FFA55457D991BBED58DA2C74 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E85554D9766C46BE7919F498 /* NavigationStep.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A9DE0EFCC62895A242CD3CD5 /* FenixNavi */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B91069E2D678E6EBF6F240D1 /* Build configuration list for PBXNativeTarget "FenixNavi" */;
+			buildPhases = (
+				88A1BE2F335B1637D9889BA9 /* Sources */,
+				B6AF1127F431468E31B60D2B /* Frameworks */,
+				9A4678012C57A04A542DE4D9 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FenixNavi;
+			packageProductDependencies = (
+			);
+			productName = FenixNavi;
+			productReference = 60F434C49FC9C5C7E06A636F /* FenixNavi.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		30909A3ACECACF0AA5117226 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = FFC4980C7A68281041663714 /* Build configuration list for PBXProject "FenixNavi" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 6A6FA39E0A2ECB6B9CA64A0F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B49B57C8E5551153B4DF3DEA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A9DE0EFCC62895A242CD3CD5 /* FenixNavi */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		88A1BE2F335B1637D9889BA9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C55247BDD67EDC773560250 /* ContentView.swift in Sources */,
+				2F3E1547981B7FEE4852A6E3 /* FenixNaviApp.swift in Sources */,
+				AFBB67AC6296F0024685B551 /* GarminBridge.swift in Sources */,
+				416A063035F58CBD51456410 /* NavigationEngine.swift in Sources */,
+				5FA908E1B1E034CB8821BE40 /* NavigationStep.swift in Sources */,
+				977438D9D37AE590650E249C /* RoutingService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BED7C454E7CA38557982E0E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 397R97VQGD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Frameworks\"",
+				);
+				INFOPLIST_FILE = FenixNavi/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D26048BD633A02CA3C42AD98 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Frameworks";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = FenixNavi/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fenixnavi.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		FC5CE1440B934879965131D9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 397R97VQGD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Frameworks\"",
+				);
+				INFOPLIST_FILE = FenixNavi/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FE812ED332A7460D85B36DD5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/Frameworks";
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = FenixNavi/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fenixnavi.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B91069E2D678E6EBF6F240D1 /* Build configuration list for PBXNativeTarget "FenixNavi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FC5CE1440B934879965131D9 /* Debug */,
+				BED7C454E7CA38557982E0E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FFC4980C7A68281041663714 /* Build configuration list for PBXProject "FenixNavi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D26048BD633A02CA3C42AD98 /* Debug */,
+				FE812ED332A7460D85B36DD5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 30909A3ACECACF0AA5117226 /* Project object */;
+}

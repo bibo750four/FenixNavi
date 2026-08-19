@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Xcode / Swift
+ios/.build/
+ios/DerivedData/
+ios/**/xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Connect IQ build artifacts
+watch/FenixNavi.prg
+watch/FenixNavi.prg.debug.xml
+watch/FenixNavi.iq
+watch/external-mir/
+watch/internal-mir/
+watch/gen/
+
+# Connect IQ signing keys (private - never commit)
+watch/developer_key.der
+watch/developer_key.pem
+
+# Leftover downloads
+*.dmg

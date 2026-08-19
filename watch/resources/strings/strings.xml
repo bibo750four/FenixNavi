@@ -1,0 +1,8 @@
+<strings>
+    <string id="AppName">FenixNavi</string>
+    <string id="WaitingForRoute">Waiting for route...</string>
+    <string id="Arrived">You have arrived!</string>
+    <string id="Rerouting">Rerouting...</string>
+    <string id="NoConnection">No phone connection</string>
+    <string id="StartNavOnPhone">Start navigation\non your phone</string>
+</strings>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FenixNavi Navigation Simulator</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  html, body { margin:0; height:100%; font-family: -apple-system, Segoe UI, Roboto, sans-serif; }
+  #map { position:absolute; top:0; bottom:0; left:0; right:360px; }
+  #panel {
+    position:absolute; top:0; right:0; bottom:0; width:360px; background:#111;
+    color:#eee; padding:16px; box-sizing:border-box; overflow-y:auto;
+  }
+  #panel h1 { font-size:18px; margin:0 0 8px; color:#4fc3f7; }
+  .section { margin:14px 0; padding:10px; background:#1c1c1c; border-radius:8px; }
+  .section h3 { margin:0 0 8px; font-size:12px; color:#aaa; text-transform:uppercase; letter-spacing:1px; }
+  button { background:#2a6; color:#fff; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; margin:3px; font-size:13px; }
+  button.active { background:#4fc3f7; color:#000; }
+  button.danger { background:#c33; }
+  .arrow { font-size:64px; text-align:center; line-height:1; margin:8px 0; color:#4fc3f7; }
+  .big { font-size:30px; font-weight:bold; }
+  .green { color:#4caf50; }
+  .gray { color:#aaa; }
+  .red { color:#f66; }
+  .row { margin:4px 0; }
+  .label { color:#888; font-size:12px; }
+  .uturn { color:#f66; font-weight:bold; }
+  #status { font-size:12px; color:#888; margin-top:8px; }
+  input[type=range] { width:100%; }
+  .legend { font-size:11px; color:#777; margin-top:6px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <h1>🧭 FenixNavi Simulator</h1>
+  <div class="section">
+    <h3>Controls</h3>
+    <button id="btnStart">Set Start</button>
+    <button id="btnDest">Set Destination</button>
+    <button id="btnSim" class="active">Simulate Position</button>
+    <button id="btnRoute" class="danger">Calculate Route</button>
+    <div class="legend">Click map to set the active point. Start = green, Destination = red, Position = blue.</div>
+  </div>
+
+  <div class="section">
+    <h3>Walk Along Route</h3>
+    <button id="btnBack">◀ 50 m</button>
+    <button id="btnFwd">50 m ▶</button>
+    <button id="btnSnap">Snap to route</button>
+    <div class="legend">Move the simulated position forward/backward along the route to test each turn, or snap it onto the road.</div>
+  </div>
+
+  <div class="section">
+    <h3>Heading (for wrong-direction test)</h3>
+    <input type="range" id="heading" min="0" max="360" value="0" />
+    <div class="row"><span class="label">Heading:</span> <span id="headingVal">0°</span></div>
+    <div class="legend">Simulates your travel direction. Compare with route direction to test "Turn around".</div>
+  </div>
+
+  <div class="section">
+    <h3>Navigation Indication</h3>
+    <div class="arrow" id="arrow">↑</div>
+    <div class="big" id="maneuver">—</div>
+    <div class="row"><span class="label">In:</span> <span class="green big" id="distToTurn">—</span></div>
+    <div class="row"><span class="label">On road:</span> <span id="road">—</span></div>
+    <div class="row"><span class="label">Turn angle:</span> <span id="turnAngle">—</span></div>
+    <div class="row" id="wrongDir"></div>
+    <div class="row"><span class="label">ETA:</span> <span id="eta">—</span></div>
+    <div class="row"><span class="label">To destination:</span> <span id="toDest">—</span></div>
+    <div class="row"><span class="label">Step:</span> <span id="step">—</span></div>
+  </div>
+
+  <div class="section">
+    <h3>Debug</h3>
+    <div class="row gray" id="dbgPos">—</div>
+    <div class="row gray" id="dbgPerp">—</div>
+    <div class="row gray" id="dbgRouteBearing">—</div>
+    <div class="row gray" id="dbgCourse">—</div>
+  </div>
+
+  <div id="status">Ready. Set start &amp; destination, then Calculate Route.</div>
+</div>
+
+<script>
+// ---------- Map ----------
+const map = L.map('map').setView([45.4666, 7.8647], 17);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// ---------- State ----------
+let start = null;        // [lon, lat]
+let destination = null;  // [lon, lat]
+let simPos = null;       // [lon, lat]
+let routeSteps = [];     // parsed OSRM steps
+let routeLine = null;
+let mode = 'sim';        // 'start' | 'dest' | 'sim'
+
+const startMarker = L.marker([0,0], {icon: L.divIcon({className:'', html:'<div style="background:#2a6;border-radius:50%;width:14px;height:14px;border:2px solid #fff"></div>'})}).addTo(map).setLatLng([0,0]).setOpacity(0);
+const destMarker = L.marker([0,0], {icon: L.divIcon({className:'', html:'<div style="background:#c33;border-radius:50%;width:14px;height:14px;border:2px solid #fff"></div>'})}).addTo(map).setLatLng([0,0]).setOpacity(0);
+// Position marker rendered as a heading arrow (rotates with the Heading slider).
+// The rotation is baked into the SVG itself (rotate around the center 20,20)
+// and the icon is regenerated on every heading change, which is more reliable
+// than Leaflet's built-in setRotationAngle.
+function arrowIconFor(deg){
+  const d = ((deg%360)+360)%360;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">' +
+    '<g transform="rotate(' + d + ' 20 20)">' +
+    '<path d="M20 3 L28 16 L23 16 L23 37 L17 37 L17 16 L12 16 Z" fill="#4fc3f7" stroke="#ffffff" stroke-width="2"/></g></svg>';
+  return L.icon({
+    iconUrl: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg),
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+  });
+}
+const posMarker = L.marker([0,0], {icon: arrowIconFor(0)}).addTo(map).setLatLng([0,0]).setOpacity(0);
+
+// Keep the position arrow in sync with the Heading slider.
+function setHeadingRotation(deg){
+  posMarker.setIcon(arrowIconFor(deg));
+}
+
+// ---------- Helpers ----------
+function haversine(a, b) {
+  const R = 6371000;
+  const dLat = (b[1]-a[1])*Math.PI/180;
+  const dLon = (b[0]-a[0])*Math.PI/180;
+  const lat1 = a[1]*Math.PI/180, lat2 = b[1]*Math.PI/180;
+  const h = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function projectToSegment(p, a, b) {
+  const latRef = ((a[1]+b[1])/2)*Math.PI/180;
+  const mPerLat = 111320, mPerLon = 111320*Math.cos(latRef);
+  const ax=a[0]*mPerLon, ay=a[1]*mPerLat, bx=b[0]*mPerLon, by=b[1]*mPerLat;
+  const px=p[0]*mPerLon, py=p[1]*mPerLat;
+  const dx=bx-ax, dy=by-ay, len2=dx*dx+dy*dy;
+  let t=((px-ax)*dx+(py-ay)*dy)/len2; t=Math.max(0,Math.min(1,t));
+  const projX=ax+t*dx, projY=ay+t*dy;
+  return {proj:[projX/mPerLon, projY/mPerLat], dist:Math.sqrt((px-projX)**2+(py-projY)**2)};
+}
+function distanceToTurn(pos, step) {
+  let minDist=Infinity, distAlongSnap=0, accumulated=0;
+  for(let i=0;i<step.geometry.length-1;i++){
+    const a=step.geometry[i], b=step.geometry[i+1];
+    const segLen=haversine(a,b);
+    const {proj,dist}=projectToSegment(pos,a,b);
+    if(dist<minDist){minDist=dist; distAlongSnap=accumulated+haversine(a,proj);}
+    accumulated+=segLen;
+  }
+  return {distToTurn: Math.max(0, accumulated-distAlongSnap), perp: minDist};
+}
+function perpendicularDistance(pos, step) {
+  let min=Infinity;
+  for(let i=0;i<step.geometry.length-1;i++){
+    const {dist}=projectToSegment(pos, step.geometry[i], step.geometry[i+1]);
+    min=Math.min(min,dist);
+  }
+  return min;
+}
+function bearingBetween(a,b){
+  const lat1=a[1]*Math.PI/180, lat2=b[1]*Math.PI/180;
+  const dLon=(b[0]-a[0])*Math.PI/180;
+  const y=Math.sin(dLon)*Math.cos(lat2);
+  const x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+  let deg=Math.atan2(y,x)*180/Math.PI; deg=((deg%360)+360)%360; return deg;
+}
+function routeBearingAt(pos, step){
+  let min=Infinity, best=null;
+  for(let i=0;i<step.geometry.length-1;i++){
+    const {dist}=projectToSegment(pos, step.geometry[i], step.geometry[i+1]);
+    if(dist<min){min=dist; best=bearingBetween(step.geometry[i], step.geometry[i+1]);}
+  }
+  return best;
+}
+function normAngle(a){ while(a>180)a-=360; while(a<-180)a+=360; return a; }
+function fmtDist(m){ return m>=1000 ? (m/1000).toFixed(1)+' km' : Math.round(m)+' m'; }
+
+// ---------- Maneuver text (mirrors the iOS app) ----------
+function formatManeuver(step){
+  const m=step.maneuver;
+  let prefix, connector;
+  switch(m.type){
+    case 'turn': prefix = m.modifier==='left'?'Turn left':m.modifier==='right'?'Turn right':'Turn'; connector=' onto '; break;
+    case 'depart': prefix='Follow'; connector=' '; break;
+    case 'continue': case 'new name': prefix='Continue on'; connector=' '; break;
+    case 'arrive': prefix='Arrive at'; connector=' '; break;
+    case 'roundabout': case 'rotary': prefix='Enter roundabout'; connector=' onto '; break;
+    case 'uturn': prefix='Make a U-turn'; connector=' onto '; break;
+    default: prefix=m.type; connector=' ';
+  }
+  const road = step.name ? connector+step.name : '';
+  return prefix+road;
+}
+function arrowGlyph(angleDeg){
+  // angleDeg: 0=up, 90=right, 180=down, 270=left
+  const a=((angleDeg%360)+360)%360;
+  if(a>150&&a<210) return '⬇';   // U-turn / down
+  if(a>120&&a<=150) return '↘';
+  if(a>60&&a<=120) return '➡';
+  if(a>30&&a<=60) return '↗';
+  if(a>330||a<=30) return '⬆';
+  if(a>300&&a<=330) return '↖';
+  if(a>240&&a<=300) return '⬅';
+  if(a>210&&a<=240) return '↙';
+  return '⬆';
+}
+
+// ---------- Route calculation ----------
+async function calculateRoute(){
+  if(!start||!destination){ setStatus('Set both start and destination first.'); return; }
+  setStatus('Calculating route...');
+  const coords = start[0]+','+start[1]+';'+destination[0]+','+destination[1];
+  const url = `https://routing.openstreetmap.de/routed-bike/route/v1/bike/${coords}?steps=true&geometries=geojson&overview=full&generate_hints=false`;
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.code!=='Ok'||!data.routes||!data.routes[0]){ setStatus('Route failed: '+(data.message||'no route')); return; }
+    const route = data.routes[0];
+    routeSteps = [];
+    for(const leg of route.legs){
+      for(const st of leg.steps){
+        const geom = (st.geometry&&st.geometry.coordinates)||[];
+        routeSteps.push({
+          name: st.name||'Unnamed road',
+          distance: st.distance,
+          duration: st.duration,
+          maneuver: st.maneuver,
+          geometry: geom,
+          turnAngle: (()=>{ let a=(st.maneuver.bearing_after||0)-(st.maneuver.bearing_before||0); return normAngle(a); })()
+        });
+      }
+    }
+    buildRouteInfo();
+    buildRouteSegs();
+    // Draw route polyline (concatenate all step geometries)
+    const allCoords=[];
+    for(const s of routeSteps){ for(const c of s.geometry){ allCoords.push([c[1],c[0]]); } }
+    if(routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(allCoords, {color:'#4fc3f7', weight:4}).addTo(map);
+    map.fitBounds(routeLine.getBounds(), {padding:[40,40]});
+    setStatus(`Route calculated: ${routeSteps.length} steps, ${fmtDist(route.distance)}. Click to simulate position.`);
+    if(simPos) updateIndications();
+  }catch(e){ setStatus('Route error: '+e.message); }
+}
+
+// ---------- Rerouting ----------
+// Recalculate the route from an off-route position to the destination, so the
+// simulator guides the user back onto the road (like the iOS app's reroute).
+async function rerouteFrom(pos){
+  if(!destination){ return; }
+  setStatus('Rerouting from position...');
+  const coords = pos[0]+','+pos[1]+';'+destination[0]+','+destination[1];
+  const url = `https://routing.openstreetmap.de/routed-bike/route/v1/bike/${coords}?steps=true&geometries=geojson&overview=full&generate_hints=false`;
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.code!=='Ok'||!data.routes||!data.routes[0]){ setStatus('Reroute failed: '+(data.message||'no route')); return; }
+    const route = data.routes[0];
+    routeSteps = [];
+    for(const leg of route.legs){
+      for(const st of leg.steps){
+        const geom = (st.geometry&&st.geometry.coordinates)||[];
+        routeSteps.push({
+          name: st.name||'Unnamed road',
+          distance: st.distance,
+          duration: st.duration,
+          maneuver: st.maneuver,
+          geometry: geom,
+          turnAngle: (()=>{ let a=(st.maneuver.bearing_after||0)-(st.maneuver.bearing_before||0); return normAngle(a); })()
+        });
+      }
+    }
+    buildRouteInfo();
+    buildRouteSegs();
+    const allCoords=[];
+    for(const s of routeSteps){ for(const c of s.geometry){ allCoords.push([c[1],c[0]]); } }
+    if(routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(allCoords, {color:'#4fc3f7', weight:4}).addTo(map);
+    setStatus(`Rerouted: ${routeSteps.length} steps, ${fmtDist(route.distance)}.`);
+    updateIndications();
+  }catch(e){ setStatus('Reroute error: '+e.message); }
+}
+
+// ---------- Indications ----------
+// Build cumulative route info: for each step, its start/end distance along the
+// concatenated polyline. This lets us determine the current step by progress
+// along the route (proper map-matching) instead of nearest perpendicular
+// distance, which is ambiguous at junctions.
+let routeInfo = [];
+
+function buildRouteInfo(){
+  routeInfo = [];
+  let acc = 0;
+  for(const step of routeSteps){
+    let len = 0;
+    for(let i=0;i<step.geometry.length-1;i++){ len += haversine(step.geometry[i], step.geometry[i+1]); }
+    routeInfo.push({ step, start: acc, end: acc + len });
+    acc += len;
+  }
+}
+
+// Flat list of every polyline segment with its cumulative distance and bearing.
+let routeSegs = [];
+
+function buildRouteSegs(){
+  routeSegs = [];
+  let acc = 0;
+  for(const ri of routeInfo){
+    const geom = ri.step.geometry;
+    for(let i=0;i<geom.length-1;i++){
+      const a=geom[i], b=geom[i+1];
+      const len = haversine(a,b);
+      routeSegs.push({ a, b, bearing: bearingBetween(a,b), start: acc, end: acc+len });
+      acc += len;
+    }
+  }
+}
+
+// Project a position onto the full route polyline. Returns the cumulative
+// distance s along the route, the perpendicular distance, and the local bearing.
+function projectToFullRoute(pos){
+  let best = { s: 0, perp: Infinity, bearing: null };
+  let acc = 0;
+  for(const ri of routeInfo){
+    const geom = ri.step.geometry;
+    for(let i=0;i<geom.length-1;i++){
+      const a=geom[i], b=geom[i+1];
+      const segLen = haversine(a,b);
+      const {proj, dist} = projectToSegment(pos, a, b);
+      if(dist < best.perp){
+        best.perp = dist;
+        best.s = acc + haversine(a, proj);
+        best.bearing = bearingBetween(a,b);
+      }
+      acc += segLen;
+    }
+  }
+  return best;
+}
+
+// Which step contains cumulative distance s?
+function stepIndexAt(s){
+  for(let i=0;i<routeInfo.length;i++){
+    if(s <= routeInfo[i].end) return i;
+  }
+  return routeInfo.length-1;
+}
+
+// Find the next significant turn ahead of cumulative distance s, from the route
+// GEOMETRY (bearing change along the polyline) rather than OSRM step labels.
+// This catches turns that OSRM folds into a "continue" step (e.g. a left turn
+// onto a different branch of the same-named road). Returns {distance, angle, at}.
+function findNextTurn(s){
+  if(!routeSegs.length) return null;
+  let idx = 0;
+  while(idx < routeSegs.length-1 && routeSegs[idx].end < s) idx++;
+  const ref = routeSegs[idx].bearing;
+  for(let i=idx; i<routeSegs.length; i++){
+    const rel = normAngle(routeSegs[i].bearing - ref);
+    if(Math.abs(rel) > 30){
+      return { distance: Math.max(0, routeSegs[i].start - s), angle: rel, at: routeSegs[i].start };
+    }
+  }
+  return null;
+}
+
+// Road name at/after cumulative distance s (the road you turn onto).
+function stepNameAt(s){
+  for(let i=0;i<routeInfo.length;i++){
+    if(s < routeInfo[i].end) return routeSteps[i].name;
+  }
+  return routeSteps[routeSteps.length-1].name;
+}
+
+function updateIndications(){
+  if(!simPos||!routeSteps.length){ return; }
+  const proj = projectToFullRoute(simPos);
+  const s = proj.s;
+  const index = stepIndexAt(s);
+  const step = routeSteps[index];
+  const turn = findNextTurn(s);
+  const heading = parseInt(document.getElementById('heading').value);
+  const routeBearing = proj.bearing;
+  const wrongDir = (routeBearing!=null && heading>=0 && Math.abs(normAngle(routeBearing-heading))>90);
+
+  let arrowAngle = 0;
+  let maneuverText;
+  let turnAngleText;
+  let distToTurn;
+
+  if(wrongDir){
+    arrowAngle = 180;
+    maneuverText = 'Turn around';
+    turnAngleText = '—';
+    distToTurn = turn ? turn.distance : 0;
+  } else if(!turn){
+    // No turn ahead: heading straight to the destination.
+    arrowAngle = 0;
+    maneuverText = 'Arrive at destination';
+    turnAngleText = '—';
+    distToTurn = Math.max(0, routeInfo[routeInfo.length-1].end - s);
+  } else {
+    // A real turn detected from the geometry (works even when OSRM labels the
+    // step "continue", e.g. a left turn onto a different branch of the same road).
+    const road = stepNameAt(turn.at) || step.name;
+    const a = Math.abs(turn.angle);
+    const dir = turn.angle > 0 ? 'right' : 'left';
+    let strength;
+    if(a <= 60){ strength = 'Bear '; }
+    else if(a <= 120){ strength = 'Turn '; }
+    else { strength = 'Sharp '; }
+    maneuverText = strength + dir + ' onto ' + road;
+    arrowAngle = ((turn.angle%360)+360)%360;
+    turnAngleText = turn.angle+'°';
+    distToTurn = turn.distance;
+  }
+
+  document.getElementById('arrow').textContent = arrowGlyph(arrowAngle);
+  document.getElementById('arrow').style.color = wrongDir ? '#f66' : '#4fc3f7';
+  document.getElementById('maneuver').textContent = maneuverText;
+  document.getElementById('road').textContent = step.name||'—';
+  document.getElementById('distToTurn').textContent = fmtDist(distToTurn);
+  document.getElementById('turnAngle').textContent = turnAngleText;
+  document.getElementById('wrongDir').innerHTML = wrongDir ? '<span class="uturn">⚠ Wrong direction - turn around!</span>' : '<span class="gray">Going the right way</span>';
+  // ETA / destination
+  let remDist=0, remDur=0;
+  for(let i=index;i<routeSteps.length;i++){ remDist+=routeSteps[i].distance; remDur+=routeSteps[i].duration; }
+  document.getElementById('eta').textContent = Math.round(remDur/60)+' min';
+  document.getElementById('toDest').textContent = fmtDist(remDist);
+  document.getElementById('step').textContent = (index+1)+' / '+routeSteps.length;
+  // Debug
+  document.getElementById('dbgPos').textContent = 'pos: '+simPos[1].toFixed(6)+', '+simPos[0].toFixed(6);
+  document.getElementById('dbgPerp').textContent = 'perp dist to route: '+Math.round(proj.perp)+'m';
+  document.getElementById('dbgRouteBearing').textContent = 'route bearing: '+(routeBearing==null?'—':Math.round(routeBearing)+'°');
+  document.getElementById('dbgCourse').textContent = 'heading: '+heading+'°';
+}
+
+// ---------- Walk along route ----------
+// Move the simulated position a given distance forward/backward along the
+// current step's polyline (snapped onto the road), so the user can test how
+// the indication changes as they approach each turn.
+function walkAlongRoute(deltaM){
+  if(!simPos||!routeSteps.length) return;
+  if(!routeSegs.length) return;
+  const proj = projectToFullRoute(simPos);
+  const total = routeSegs[routeSegs.length-1].end;
+  const newS = Math.max(0, Math.min(total, proj.s + deltaM));
+  const newPos = pointAtCumulative(newS);
+  if(newPos){ simPos=newPos; posMarker.setLatLng([newPos[1],newPos[0]]).setOpacity(1); updateIndications(); }
+}
+
+// Point on the route at cumulative distance s.
+function pointAtCumulative(s){
+  for(let i=0;i<routeSegs.length;i++){
+    if(s <= routeSegs[i].end){
+      const seg = routeSegs[i];
+      const t = (s - seg.start) / (seg.end - seg.start || 1);
+      return [seg.a[0]+(seg.b[0]-seg.a[0])*t, seg.a[1]+(seg.b[1]-seg.a[1])*t];
+    }
+  }
+  const last = routeSegs[routeSegs.length-1];
+  return last ? last.b : null;
+}
+
+function snapToRoute(){
+  if(!simPos||!routeSteps.length) return;
+  const proj = projectToFullRoute(simPos);
+  let best=null, bestDist=Infinity;
+  for(const ri of routeInfo){
+    const geom=ri.step.geometry;
+    for(let i=0;i<geom.length-1;i++){
+      const a=geom[i], b=geom[i+1];
+      const {proj:pp, dist}=projectToSegment(simPos, a, b);
+      if(dist<bestDist){ bestDist=dist; best=pp; }
+    }
+  }
+  if(best){ simPos=best; posMarker.setLatLng([best[1],best[0]]).setOpacity(1); updateIndications(); }
+}
+
+// ---------- Map click ----------
+map.on('click', (e)=>{
+  const ll=[e.latlng.lng, e.latlng.lat];
+  if(mode==='start'){ start=ll; startMarker.setLatLng([ll[1],ll[0]]).setOpacity(1); }
+  else if(mode==='dest'){ destination=ll; destMarker.setLatLng([ll[1],ll[0]]).setOpacity(1); }
+  else {
+    simPos=ll; posMarker.setLatLng([ll[1],ll[0]]).setOpacity(1);
+    setHeadingRotation(parseInt(document.getElementById('heading').value));
+    // Always recalculate the route from the clicked position so the indication
+    // reflects the NEW position. Otherwise a click near the previous route just
+    // snaps onto that stale route and reuses its (possibly wrong) instructions.
+    if(destination){ rerouteFrom(ll); }
+    else { updateIndications(); }
+  }
+});
+
+// ---------- Buttons ----------
+document.getElementById('btnStart').onclick=()=>{ mode='start'; setActive('btnStart'); };
+document.getElementById('btnDest').onclick=()=>{ mode='dest'; setActive('btnDest'); };
+document.getElementById('btnSim').onclick=()=>{ mode='sim'; setActive('btnSim'); };
+document.getElementById('btnRoute').onclick=calculateRoute;
+document.getElementById('heading').oninput=(e)=>{ document.getElementById('headingVal').textContent=e.target.value+'°'; setHeadingRotation(parseInt(e.target.value)); if(simPos) updateIndications(); };
+document.getElementById('btnFwd').onclick=()=>walkAlongRoute(50);
+document.getElementById('btnBack').onclick=()=>walkAlongRoute(-50);
+document.getElementById('btnSnap').onclick=snapToRoute;
+function setActive(id){ ['btnStart','btnDest','btnSim'].forEach(b=>document.getElementById(b).classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function setStatus(t){ document.getElementById('status').textContent=t; }
+
+// Default demo: set a start/destination around the test area
+start=[7.8646,45.4666]; startMarker.setLatLng([45.4666,7.8646]).setOpacity(1);
+destination=[7.8680,45.4680]; destMarker.setLatLng([45.4680,7.8680]).setOpacity(1);
+calculateRoute();
+</script>
+</body>
+</html>

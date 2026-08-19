@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+
+    <iq:application
+        entry="FenixNaviApp"
+        id="21e5ae0f-a40e-4145-b95b-9d9b3ff77711"
+        launcherIcon="@Drawables.LauncherIcon"
+        name="@Strings.AppName"
+        type="watch-app"
+        minApiLevel="3.0.0">
+
+        <iq:products>
+            <iq:product id="fenix847mm"/>
+            <iq:product id="fenix843mm"/>
+            <iq:product id="fenix8solar47mm"/>
+            <iq:product id="fenix8solar51mm"/>
+        </iq:products>
+
+        <iq:permissions>
+            <iq:uses-permission id="Communications"/>
+        </iq:permissions>
+
+        <iq:languages>
+            <iq:language>eng</iq:language>
+            <iq:language>deu</iq:language>
+        </iq:languages>
+
+    </iq:application>
+
+</iq:manifest>

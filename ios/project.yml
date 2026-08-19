@@ -1,0 +1,31 @@
+name: FenixNavi
+options:
+  bundleIdPrefix: com.fenixnavi
+  deploymentTarget:
+    iOS: "17.6"
+  xcodeVersion: "16.0"
+
+settings:
+  base:
+    INFOPLIST_FILE: FenixNavi/Info.plist
+    PRODUCT_BUNDLE_IDENTIFIER: com.fenixnavi.app
+    DEVELOPMENT_TEAM: ""
+    FRAMEWORK_SEARCH_PATHS:
+      - "$(PROJECT_DIR)/Frameworks"
+
+targets:
+  FenixNavi:
+    type: application
+    platform: iOS
+    sources:
+      - path: FenixNavi
+        excludes:
+          - "Info.plist"
+    settings:
+      base:
+        SWIFT_VERSION: "5.0"
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    dependencies:
+      - framework: Frameworks/ConnectIQ.framework
+        embed: true
+        codeSign: true
