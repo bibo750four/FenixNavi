@@ -32,6 +32,9 @@ class GarminBridge: NSObject {
     private(set) var isConnected = false
     private var connectionCallback: ((Bool) -> Void)?
     private var pendingMessages: [[String: Any]] = []
+    private var pendingOpenApp = false
+    private var pendingOpenAppCompletion: ((Bool) -> Void)?
+    private var lastStatus: IQDeviceStatus = .invalidDevice
 
     // MARK: - Public API
 
@@ -89,6 +92,19 @@ class GarminBridge: NSObject {
             if result != IQSendMessageResult.success {
                 print("FenixNavi: Send failed: \(result.rawValue)")
             }
+        }
+    }
+
+    /// Open the FenixNavi app on the watch once the device is connected.
+    /// If the device isn't connected yet (BLE still pairing), the request is
+    /// deferred until deviceStatusChanged reports Connected.
+    /// - Parameter completion: Called with true if the request was sent successfully.
+    func openAppWhenReady(completion: @escaping (Bool) -> Void) {
+        if lastStatus == .connected {
+            openApp(completion: completion)
+        } else {
+            pendingOpenApp = true
+            pendingOpenAppCompletion = completion
         }
     }
 
@@ -156,10 +172,18 @@ class GarminBridge: NSObject {
 extension GarminBridge: IQDeviceEventDelegate {
 
     func deviceStatusChanged(_ device: IQDevice, status: IQDeviceStatus) {
+        lastStatus = status
         print("FenixNavi: Device status: \(status.rawValue)")
         switch status {
         case .connected:
             isConnected = true
+            // The device is now ready - fire any deferred open-app request.
+            if pendingOpenApp {
+                pendingOpenApp = false
+                let completion = pendingOpenAppCompletion
+                pendingOpenAppCompletion = nil
+                openApp(completion: completion ?? { _ in })
+            }
         case .notConnected, .invalidDevice:
             isConnected = false
         @unknown default:

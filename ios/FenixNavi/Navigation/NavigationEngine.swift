@@ -184,7 +184,9 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         let devices = garminBridge.handleOpenURL(url)
         if !devices.isEmpty {
             watchConnected = true
-            garminBridge.openApp { success in
+            // Defer until the watch reports Connected, so the request isn't
+            // sent before BLE is ready (which failed with DeviceNotAvailable).
+            garminBridge.openAppWhenReady { success in
                 print("FenixNavi: App open result: \(success)")
             }
         }
