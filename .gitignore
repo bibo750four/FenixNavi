@@ -15,6 +15,7 @@ watch/FenixNavi.iq
 watch/external-mir/
 watch/internal-mir/
 watch/gen/
+watch/LOGS/
 
 # Connect IQ signing keys (private - never commit)
 watch/developer_key.der
