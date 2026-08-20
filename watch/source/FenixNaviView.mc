@@ -98,37 +98,43 @@ class FenixNaviView extends WatchUi.View {
             arrowAngle = 180;  // point down = turn around
             maneuverText = "Turn around";
         }
-        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
-        drawArrow(dc, _centerX, _centerY - 105, 42, arrowAngle);
-
-        // Maneuver instruction - wrapped to up to 3 lines so road names fit
-        var lines = wrapText(dc, maneuverText, Graphics.FONT_SMALL, _maxTextWidth, 3);
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        var lineY = _centerY - 60;
-        for (var i = 0; i < lines.size(); i++) {
-            dc.drawText(_centerX, lineY, Graphics.FONT_SMALL, lines[i],
-                        Graphics.TEXT_JUSTIFY_CENTER);
-            lineY += 40;
-        }
-
-        // Distance to next turn (kept small so the instruction gets more room)
+        // Distance to next turn - placed near the top, close to the green arc
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 58, Graphics.FONT_XTINY,
+        dc.drawText(_centerX, _centerY - 167, Graphics.FONT_XTINY,
                     Lang.format("$1$ to turn", [_navData.distanceText()]),
                     Graphics.TEXT_JUSTIFY_CENTER);
 
-        // ETA (separate line)
+        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
+        drawArrow(dc, _centerX, _centerY - 100, 42, arrowAngle);
+
+        // Maneuver instruction - wrapped to up to 3 lines so road names fit.
+        // Uses the smallest font so descenders (p, g, y) aren't clipped and
+        // lines have more breathing room.
+        var lines = wrapText(dc, maneuverText, Graphics.FONT_XTINY, _maxTextWidth, 3);
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        var lineY = _centerY - 50;
+        for (var i = 0; i < lines.size(); i++) {
+            dc.drawText(_centerX, lineY, Graphics.FONT_XTINY, lines[i],
+                        Graphics.TEXT_JUSTIFY_CENTER);
+            lineY += 44;
+        }
+
+        // ETA (small, moved down with the destination to leave room for the
+        // third line of the maneuver text)
         var eta = (_navData.etaMin == null) ? 0 : _navData.etaMin;
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 78, Graphics.FONT_SMALL,
+        dc.drawText(_centerX, _centerY + 74, Graphics.FONT_XTINY,
                     Lang.format("ETA: $1$ min", [eta]),
                     Graphics.TEXT_JUSTIFY_CENTER);
 
-        // Distance to destination (separate line, well below ETA)
+        // Distance to destination - two lines, lower on the screen
         var toDestKm = (_navData.totalDistanceKm == null) ? 0.0 : _navData.totalDistanceKm;
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 98, Graphics.FONT_XTINY,
-                    Lang.format("$1$ km to destination", [toDestKm.format("%.1f")]),
+        dc.drawText(_centerX, _centerY + 112, Graphics.FONT_XTINY,
+                    Lang.format("$1$ km", [toDestKm.format("%.1f")]),
+                    Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _centerY + 151, Graphics.FONT_XTINY,
+                    "to destination",
                     Graphics.TEXT_JUSTIFY_CENTER);
     }
 
@@ -222,6 +228,7 @@ class FenixNaviView extends WatchUi.View {
     }
 
     //! Draw a direction arrow using graphics primitives.
+    //! The head is a filled triangle so the tip renders cleanly (not clipped).
     function drawArrow(dc, cx, cy, size, angle) {
         var rad = angle * Math.PI / 180.0;
         var tipX = cx + size * Math.sin(rad);
@@ -229,14 +236,21 @@ class FenixNaviView extends WatchUi.View {
         var tailX = cx - size * 0.5 * Math.sin(rad);
         var tailY = cy + size * 0.5 * Math.cos(rad);
 
-        dc.setPenWidth(9);
+        // Shaft (thinner so the head is clearly visible)
+        dc.setPenWidth(7);
         dc.drawLine(tailX, tailY, tipX, tipY);
 
-        var headLen = size * 0.30;
-        var a1 = rad + Math.PI * 0.76;
-        var a2 = rad - Math.PI * 0.76;
-        dc.drawLine(tipX, tipY, tipX + headLen * Math.sin(a1), tipY - headLen * Math.cos(a1));
-        dc.drawLine(tipX, tipY, tipX + headLen * Math.sin(a2), tipY - headLen * Math.cos(a2));
+        // Filled triangular head, larger than the shaft width so it reads as
+        // an arrowhead (fillPolygon takes an array of [x, y] points)
+        var headLen = size * 0.42;
+        var headWidth = size * 0.36;
+        var bx = tipX - headLen * Math.sin(rad);
+        var by = tipY + headLen * Math.cos(rad);
+        var p1x = bx + headWidth * Math.cos(rad);
+        var p1y = by + headWidth * Math.sin(rad);
+        var p2x = bx - headWidth * Math.cos(rad);
+        var p2y = by - headWidth * Math.sin(rad);
+        dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
     }
 
     //! Convert the relative turn angle (degrees, 0=straight, +right, -left)
