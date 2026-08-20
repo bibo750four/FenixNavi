@@ -27,6 +27,15 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var watchConnected = false
     @Published var isGPSActive = false
 
+    // Geometry-based current maneuver, shared with the watch so the iOS screen
+    // shows the same instruction the watch displays (and refreshes on every fix).
+    @Published var currentManeuver = ""
+    @Published var currentManeuverText = ""
+    @Published var currentStreetName = ""
+    @Published var distanceToNextTurn: Double = 0
+    @Published var currentTurnAngle = 0
+    @Published var wrongDirection = false
+
     // MARK: - Private State
 
     private let locationManager = CLLocationManager()
@@ -55,6 +64,19 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     private var routeSegs: [RouteSegment] = []
     private var routeTotalLength: Double = 0
+
+    // Geometry-based maneuver for the current position (built once per check,
+    // shared by the iOS display and the watch message).
+    private struct ManeuverInfo {
+        let maneuver: String
+        let maneuverText: String
+        let turnAngle: Int
+        let streetName: String
+        let distanceToTurn: Double
+        let wrongDirection: Bool
+        let remainingDistance: Double
+        let remainingDuration: Double
+    }
 
     // MARK: - Setup
 
@@ -122,7 +144,7 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             startPositionUpdates()
 
             // Send first instruction to watch
-            sendCurrentStepToWatch()
+            refreshManeuverAndSend()
 
         } catch {
             statusText = "Route error: \(error.localizedDescription)"
@@ -290,32 +312,34 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             return
         }
 
-        sendCurrentStepToWatch()
+        refreshManeuverAndSend()
     }
 
-    private func sendCurrentStepToWatch() {
+    /// Compute the current geometry-based maneuver, expose it to the iOS screen,
+    /// and send it to the watch.
+    private func refreshManeuverAndSend() {
         guard let location = currentLocation, !routeSegs.isEmpty else { return }
-        let user = location.coordinate
-        let proj = projectToFullRoute(user)
-        let s = proj.s
+        let s = projectToFullRoute(location.coordinate).s
         let index = stepIndexAt(s)
+        let info = computeManeuver(at: s, index: index)
+        currentManeuver = info.maneuver
+        currentManeuverText = info.maneuverText
+        currentStreetName = info.streetName
+        distanceToNextTurn = info.distanceToTurn
+        currentTurnAngle = info.turnAngle
+        wrongDirection = info.wrongDirection
+        sendCurrentStepToWatch(info: info)
+    }
+
+    /// Build the geometry-based maneuver for the current position along the route.
+    /// Shared by the iOS display and the watch message so both stay consistent.
+    private func computeManeuver(at s: Double, index: Int) -> ManeuverInfo {
         let turn = findNextTurn(at: s)
-
         let distanceToTurn = turn?.distance ?? (routeTotalLength - s)
-        let distM = Int(distanceToTurn)
-
-        // Throttle: only send when the step or distance changes meaningfully.
-        if currentStepIndex == lastSentStepIndex && distM == lastSentDistanceM {
-            return
-        }
-        lastSentStepIndex = currentStepIndex
-        lastSentDistanceM = distM
-
+        let wrongDir = isGoingWrongWay(at: s)
         let remainingDistance = routeTotalLength - s
         let remainingDuration = steps[index...].reduce(0) { $0 + $1.duration }
-        let wrongDir = isGoingWrongWay(at: s)
 
-        // Build the maneuver from the geometry-based next turn.
         let maneuver: String
         let maneuverText: String
         let turnAngle: Int
@@ -345,20 +369,43 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             streetName = ""
         }
 
+        return ManeuverInfo(
+            maneuver: maneuver,
+            maneuverText: maneuverText,
+            turnAngle: turnAngle,
+            streetName: streetName,
+            distanceToTurn: distanceToTurn,
+            wrongDirection: wrongDir,
+            remainingDistance: remainingDistance,
+            remainingDuration: remainingDuration
+        )
+    }
+
+    private func sendCurrentStepToWatch(info: ManeuverInfo) {
+        guard currentLocation != nil, !routeSegs.isEmpty else { return }
+        let distM = Int(info.distanceToTurn)
+
+        // Throttle: only send when the step or distance changes meaningfully.
+        if currentStepIndex == lastSentStepIndex && distM == lastSentDistanceM {
+            return
+        }
+        lastSentStepIndex = currentStepIndex
+        lastSentDistanceM = distM
+
         let message: [String: Any] = [
             "type": "navigation_update",
             "step_index": currentStepIndex,
             "total_steps": totalSteps,
-            "maneuver": maneuver,
-            "maneuver_text": maneuverText,
-            "street_name": streetName,
+            "maneuver": info.maneuver,
+            "maneuver_text": info.maneuverText,
+            "street_name": info.streetName,
             "distance_m": distM,
-            "duration_s": Int(remainingDuration),
-            "turn_angle": turnAngle,
-            "wrong_direction": wrongDir,
-            "total_distance_km": remainingDistance / 1000.0,
-            "total_duration_min": Int(remainingDuration / 60.0),
-            "eta_min": Int(remainingDuration / 60.0)
+            "duration_s": Int(info.remainingDuration),
+            "turn_angle": info.turnAngle,
+            "wrong_direction": info.wrongDirection,
+            "total_distance_km": info.remainingDistance / 1000.0,
+            "total_duration_min": Int(info.remainingDuration / 60.0),
+            "eta_min": Int(info.remainingDuration / 60.0)
         ]
 
         garminBridge.sendMessage(message)
@@ -496,7 +543,7 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
                     currentStep = steps.first
                     isRerouting = false
                     statusText = "Navigating"
-                    sendCurrentStepToWatch()
+                    refreshManeuverAndSend()
                 } else {
                     isRerouting = false
                     statusText = "No reroute found"

@@ -73,7 +73,8 @@ class FenixNaviView extends WatchUi.View {
     function drawNavigationScreen(dc) {
         // --- Circular progress ring around the edge ---
         var dist = (_navData.distanceMeters == null) ? 0.0 : _navData.distanceMeters.toFloat();
-        var fraction = dist / RING_MAX_DIST;
+        // Ring: full at 150m, empty at 5m, so it visibly shrinks as you approach.
+        var fraction = (dist - 5.0) / 145.0;
         if (fraction > 1.0) { fraction = 1.0; }
         if (fraction < 0.0) { fraction = 0.0; }
 
@@ -98,35 +99,35 @@ class FenixNaviView extends WatchUi.View {
             maneuverText = "Turn around";
         }
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
-        drawArrow(dc, _centerX, _centerY - 95, 42, arrowAngle);
+        drawArrow(dc, _centerX, _centerY - 105, 42, arrowAngle);
 
-        // Maneuver instruction - wrapped to up to 2 lines, generous spacing
-        var lines = wrapText(dc, maneuverText, Graphics.FONT_SMALL, _maxTextWidth);
+        // Maneuver instruction - wrapped to up to 3 lines so road names fit
+        var lines = wrapText(dc, maneuverText, Graphics.FONT_SMALL, _maxTextWidth, 3);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        var lineY = _centerY - 50;
+        var lineY = _centerY - 60;
         for (var i = 0; i < lines.size(); i++) {
             dc.drawText(_centerX, lineY, Graphics.FONT_SMALL, lines[i],
                         Graphics.TEXT_JUSTIFY_CENTER);
-            lineY += 52;  // generous spacing so lines don't overlap
+            lineY += 40;
         }
 
-        // Distance to next turn (clearly labeled)
+        // Distance to next turn (kept small so the instruction gets more room)
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 60, Graphics.FONT_SMALL,
-                    Lang.format("to next turn: $1$", [_navData.distanceText()]),
+        dc.drawText(_centerX, _centerY + 58, Graphics.FONT_XTINY,
+                    Lang.format("$1$ to turn", [_navData.distanceText()]),
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         // ETA (separate line)
         var eta = (_navData.etaMin == null) ? 0 : _navData.etaMin;
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 95, Graphics.FONT_SMALL,
+        dc.drawText(_centerX, _centerY + 78, Graphics.FONT_SMALL,
                     Lang.format("ETA: $1$ min", [eta]),
                     Graphics.TEXT_JUSTIFY_CENTER);
 
         // Distance to destination (separate line, well below ETA)
         var toDestKm = (_navData.totalDistanceKm == null) ? 0.0 : _navData.totalDistanceKm;
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 125, Graphics.FONT_XTINY,
+        dc.drawText(_centerX, _centerY + 98, Graphics.FONT_XTINY,
                     Lang.format("$1$ km to destination", [toDestKm.format("%.1f")]),
                     Graphics.TEXT_JUSTIFY_CENTER);
     }
@@ -149,14 +150,16 @@ class FenixNaviView extends WatchUi.View {
 
     //! Wrap text into up to 2 lines that each fit within maxWidth.
     //! Long words are truncated with "..." so text never exceeds the boundary.
-    function wrapText(dc, text, font, maxWidth) {
+    function wrapText(dc, text, font, maxWidth, maxLines) {
         var lines = [];
         if (text == null) { return lines; }
         var str = text as Lang.String;
         if (str.length() == 0) { return lines; }
 
+        if (maxLines == null) { maxLines = 2; }
+
         // Character cap as a safety net - force wrapping for longer text
-        var maxChars = 18;
+        var maxChars = 20;
         if (maxChars < 8) { maxChars = 8; }
 
         var words = splitWords(str);
@@ -170,12 +173,12 @@ class FenixNaviView extends WatchUi.View {
             } else {
                 if (current.length() > 0) {
                     lines.add(current);
-                    if (lines.size() >= 2) { break; }
+                    if (lines.size() >= maxLines) { break; }
                 }
                 current = words[i];
             }
         }
-        if (current.length() > 0 && lines.size() < 2) {
+        if (current.length() > 0 && lines.size() < maxLines) {
             lines.add(current);
         }
 

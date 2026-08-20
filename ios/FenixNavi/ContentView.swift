@@ -168,63 +168,61 @@ struct ContentView: View {
 
     var navigationView: some View {
         VStack(spacing: 0) {
-            // Current instruction
-            if let step = navEngine.currentStep {
-                VStack(spacing: 16) {
-                    // Maneuver icon
-                    Image(systemName: maneuverIcon(step.maneuver))
-                        .font(.system(size: 56))
-                        .foregroundColor(.green)
+            // Current instruction (geometry-based, matches the watch)
+            VStack(spacing: 16) {
+                // Maneuver icon
+                Image(systemName: maneuverIcon(navEngine.currentManeuver))
+                    .font(.system(size: 56))
+                    .foregroundColor(.green)
 
-                    // Instruction text
-                    Text(step.instruction)
-                        .font(.title3.bold())
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                // Instruction text
+                Text(navEngine.currentManeuverText)
+                    .font(.title3.bold())
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
 
-                    // Distance to turn
-                    Text(formatDistance(step.distance))
-                        .font(.system(size: 42, weight: .bold, design: .rounded))
-                        .foregroundColor(.green)
-                }
-                .padding(.top, 30)
-
-                // Street name
-                if !step.streetName.isEmpty {
-                    Text(step.streetName)
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 8)
-                }
-
-                // Trip info
-                HStack(spacing: 30) {
-                    VStack {
-                        Text("ETA")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(navEngine.totalDuration > 0 ? Int(navEngine.totalDuration / 60) : 0) min")
-                            .font(.title3.bold())
-                    }
-
-                    VStack {
-                        Text("Remaining")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(formatDistance(navEngine.totalDistance))
-                            .font(.title3.bold())
-                    }
-
-                    VStack {
-                        Text("Step")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(navEngine.currentStepIndex + 1)/\(navEngine.totalSteps)")
-                            .font(.title3.bold())
-                    }
-                }
-                .padding(.top, 20)
+                // Distance to turn
+                Text(formatDistance(navEngine.distanceToNextTurn))
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundColor(.green)
             }
+            .padding(.top, 30)
+
+            // Street name
+            if !navEngine.currentStreetName.isEmpty {
+                Text(navEngine.currentStreetName)
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 8)
+            }
+
+            // Trip info
+            HStack(spacing: 30) {
+                VStack {
+                    Text("ETA")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(navEngine.totalDuration > 0 ? Int(navEngine.totalDuration / 60) : 0) min")
+                        .font(.title3.bold())
+                }
+
+                VStack {
+                    Text("Remaining")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(formatDistance(navEngine.totalDistance))
+                        .font(.title3.bold())
+                }
+
+                VStack {
+                    Text("Step")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(navEngine.currentStepIndex + 1)/\(navEngine.totalSteps)")
+                        .font(.title3.bold())
+                }
+            }
+            .padding(.top, 20)
 
             // Re-routing indicator
             if navEngine.isRerouting {
