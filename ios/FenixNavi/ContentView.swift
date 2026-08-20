@@ -74,19 +74,19 @@ struct ContentView: View {
     // MARK: - Search & Destination Selection
 
     var searchView: some View {
-        VStack(spacing: 20) {
-            // Header
-            VStack(spacing: 8) {
+        VStack(spacing: 12) {
+            // Header (kept compact so the results list gets more vertical space)
+            VStack(spacing: 2) {
                 Image(systemName: "bicycle")
-                    .font(.system(size: 48))
+                    .font(.system(size: 32))
                     .foregroundColor(.green)
                 Text("Cycle Navigation")
-                    .font(.title2.bold())
+                    .font(.headline)
                 Text("to Garmin Watch")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
-            .padding(.top, 30)
+            .padding(.top, 8)
 
             // Search field
             HStack {
@@ -116,7 +116,8 @@ struct ContentView: View {
                     .padding()
             }
 
-            // Search results
+            // Search results - expand to fill the remaining space and let the
+            // user scroll to dismiss the keyboard (frees more room for results).
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(searchResults) { result in
@@ -143,6 +144,7 @@ struct ContentView: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
 
             // Status
             if !navEngine.statusText.isEmpty && !navEngine.isNavigating {
