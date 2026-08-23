@@ -43,10 +43,9 @@ class FenixNaviView extends WatchUi.View {
 
         // If navigating but no message from the phone for a while (e.g. the app
         // was closed), return to the waiting screen instead of staying stuck.
-        // Skip this while in demo mode (no phone is connected during the demo).
         if (state == NavigationData.STATE_NAVIGATING || state == NavigationData.STATE_REROUTING) {
             var app = Application.getApp();
-            if (app != null && !app.isDemoMode() && !app.isConnected()) {
+            if (app != null && !app.isConnected()) {
                 _navData.state = NavigationData.STATE_WAITING;
                 state = NavigationData.STATE_WAITING;
             }
@@ -79,11 +78,6 @@ class FenixNaviView extends WatchUi.View {
         dc.setColor((app != null && app.isConnected()) ? Graphics.COLOR_GREEN : Graphics.COLOR_RED,
                     Graphics.COLOR_BLACK);
         dc.fillCircle(_centerX, _centerY + 80, 6);
-
-        // Demo mode hint
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY + 95, Graphics.FONT_XTINY,
-                    "Menu = demo mode", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawNavigationScreen(dc) {

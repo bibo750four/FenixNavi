@@ -1,4 +1,3 @@
-using Toybox.Application;
 using Toybox.WatchUi;
 
 //! Input delegate for FenixNavi. Handles button presses and touch events.
@@ -8,27 +7,15 @@ class FenixNaviDelegate extends WatchUi.BehaviorDelegate {
         BehaviorDelegate.initialize();
     }
 
-    // Back button: exits demo mode if active, otherwise exits the app.
+    // Back button exits the app
     function onBack() {
-        var app = Application.getApp();
-        if (app != null && app.isDemoMode()) {
-            app.exitDemoMode();
-            return true;
-        }
         WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
         return true;
     }
 
-    // Menu button: enters demo mode, or advances to the next demo scenario.
+    // Menu button can be used to show settings (future)
     function onMenu() {
-        var app = Application.getApp();
-        if (app != null) {
-            if (app.isDemoMode()) {
-                app.nextDemoScenario();
-            } else {
-                app.enterDemoMode();
-            }
-        }
+        // Reserved for future settings menu
         return true;
     }
 }

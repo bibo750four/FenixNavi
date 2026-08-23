@@ -101,7 +101,7 @@ class GarminBridge: NSObject {
     /// - Parameter completion: Called with true if the request was sent successfully.
     func openAppWhenReady(completion: @escaping (Bool) -> Void) {
         if lastStatus == .connected {
-            openApp(completion: completion)
+            openAppWithRetry(completion: completion)
         } else {
             pendingOpenApp = true
             pendingOpenAppCompletion = completion
@@ -109,7 +109,8 @@ class GarminBridge: NSObject {
     }
 
     /// Open the FenixNavi app on the watch.
-    /// - Parameter completion: Called with true if the request was sent successfully.
+    /// - Parameter completion: Called with true if the request was sent successfully
+    ///   (or the app was already running on the watch).
     func openApp(completion: @escaping (Bool) -> Void) {
         guard let app = currentApp else {
             print("FenixNavi: No app to open")
@@ -118,9 +119,34 @@ class GarminBridge: NSObject {
         }
 
         ConnectIQ.sharedInstance().openAppRequest(app) { result in
-            let success = result == IQSendMessageResult.success
+            // The app is already running on the watch - that satisfies
+            // "launch the app", so treat it as success.
+            let success = result == IQSendMessageResult.success ||
+                          result == IQSendMessageResult.failure_AppAlreadyRunning
             print("FenixNavi: Open app result: \(result.rawValue)")
             completion(success)
+        }
+    }
+
+    /// Open the FenixNavi app on the watch, retrying a few times if the device
+    /// isn't ready yet. The first attempt right after the device reports
+    /// Connected often fails with DeviceNotAvailable because BLE is still
+    /// pairing, so we retry with a short delay.
+    private func openAppWithRetry(completion: @escaping (Bool) -> Void, attempts: Int = 6) {
+        guard attempts > 0 else {
+            print("FenixNavi: Open app failed after retries")
+            completion(false)
+            return
+        }
+        openApp { success in
+            if success {
+                completion(true)
+            } else {
+                print("FenixNavi: Open app failed, retrying (\(attempts - 1) left)")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.openAppWithRetry(completion: completion, attempts: attempts - 1)
+                }
+            }
         }
     }
 
@@ -182,7 +208,7 @@ extension GarminBridge: IQDeviceEventDelegate {
                 pendingOpenApp = false
                 let completion = pendingOpenAppCompletion
                 pendingOpenAppCompletion = nil
-                openApp(completion: completion ?? { _ in })
+                openAppWithRetry(completion: completion ?? { _ in })
             }
         case .notConnected, .invalidDevice:
             isConnected = false
