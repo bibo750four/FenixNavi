@@ -43,9 +43,10 @@ class FenixNaviView extends WatchUi.View {
 
         // If navigating but no message from the phone for a while (e.g. the app
         // was closed), return to the waiting screen instead of staying stuck.
+        // Skip this while in demo mode (no phone is connected during the demo).
         if (state == NavigationData.STATE_NAVIGATING || state == NavigationData.STATE_REROUTING) {
             var app = Application.getApp();
-            if (app != null && !app.isConnected()) {
+            if (app != null && !app.isDemoMode() && !app.isConnected()) {
                 _navData.state = NavigationData.STATE_WAITING;
                 state = NavigationData.STATE_WAITING;
             }
