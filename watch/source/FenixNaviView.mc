@@ -98,11 +98,11 @@ class FenixNaviView extends WatchUi.View {
         var sweep = 360 * fraction;
 
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_BLACK);
-        dc.drawArc(_centerX, _centerY, _ringRadius, startAngle, startAngle + 360, 10);
+        dc.drawArc(_centerX, _centerY, _ringRadius, Graphics.ARC_CLOCKWISE, 0, 0);
 
         if (sweep > 0) {
             dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_BLACK);
-            dc.drawArc(_centerX, _centerY, _ringRadius, startAngle, startAngle + sweep, 10);
+            dc.drawArc(_centerX, _centerY, _ringRadius, Graphics.ARC_COUNTER_CLOCKWISE, startAngle, startAngle + sweep);
         }
 
         // --- Center content ---
@@ -160,7 +160,7 @@ class FenixNaviView extends WatchUi.View {
 
     function drawArrivedScreen(dc) {
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_BLACK);
-        dc.drawArc(_centerX, _centerY, _ringRadius, 90, 450, 10);
+        dc.drawArc(_centerX, _centerY, _ringRadius, Graphics.ARC_CLOCKWISE, 0, 0);
         drawArrow(dc, _centerX, _centerY - 40, 45, 0);
         dc.drawText(_centerX, _centerY + 40, Graphics.FONT_MEDIUM,
                     WatchUi.loadResource(Rez.Strings.Arrived),

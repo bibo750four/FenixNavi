@@ -42,7 +42,8 @@ class FenixNaviApp extends Application.AppBase {
             ["roundabout", "Roundabout, take exit 2 onto Via del Crist", "Via del Crist", 50, 0, false, 2, 4, 8, 4, 0.8],
             ["uturn", "Turn around", "", 60, 180, true, 0, 5, 8, 2, 0.6],
             ["continue", "Continue on Via delle Germane", "Via delle Germane", 150, 0, false, 0, 6, 8, 6, 1.5],
-            ["arrive", "Arrive at destination", "", 20, 0, false, 0, 7, 8, 1, 0.1]
+            ["arrive", "Arrive at destination", "", 20, 0, false, 0, 7, 8, 1, 0.1],
+            ["turn_left", "Turn left onto Via Pia", "Via Pia", 5, -90, false, 0, 8, 8, 1, 0.1]
         ];
     }
 
