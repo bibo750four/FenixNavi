@@ -66,6 +66,24 @@ class NavigationData {
         v = data["exit"];                if (v != null) { roundaboutExit = v; }
     }
 
+    //! Populate the model with a fixed demo scenario (for the in-app demo mode).
+    function setDemo(maneuver, maneuverText, streetName, distanceMeters, turnAngle,
+                     wrongDirection, roundaboutExit, stepIndex, totalSteps,
+                     etaMin, totalDistanceKm) {
+        state = STATE_NAVIGATING;
+        self.maneuver = maneuver;
+        self.maneuverText = maneuverText;
+        self.streetName = streetName;
+        self.distanceMeters = distanceMeters;
+        self.turnAngle = turnAngle;
+        self.wrongDirection = wrongDirection;
+        self.roundaboutExit = roundaboutExit;
+        self.stepIndex = stepIndex;
+        self.totalSteps = totalSteps;
+        self.etaMin = etaMin;
+        self.totalDistanceKm = totalDistanceKm;
+    }
+
     //! Get a human-readable distance string.
     function distanceText() {
         if (distanceMeters == null) { return "0 m"; }

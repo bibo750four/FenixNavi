@@ -78,6 +78,11 @@ class FenixNaviView extends WatchUi.View {
         dc.setColor((app != null && app.isConnected()) ? Graphics.COLOR_GREEN : Graphics.COLOR_RED,
                     Graphics.COLOR_BLACK);
         dc.fillCircle(_centerX, _centerY + 80, 6);
+
+        // Demo mode hint
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_BLACK);
+        dc.drawText(_centerX, _centerY + 95, Graphics.FONT_XTINY,
+                    "Menu = demo mode", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawNavigationScreen(dc) {
