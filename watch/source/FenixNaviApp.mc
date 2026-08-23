@@ -22,6 +22,7 @@ class FenixNaviApp extends Application.AppBase {
     hidden var _demoMode;
     hidden var _demoIndex;
     hidden var _demoScenarios;
+    hidden var _demoTimer;
 
     function initialize() {
         AppBase.initialize();
@@ -53,6 +54,11 @@ class FenixNaviApp extends Application.AppBase {
         // even when no messages arrive (e.g. after the phone app is closed).
         _updateTimer = new Timer.Timer();
         _updateTimer.start(method(:onTimeout), 10000, true);
+
+        // Auto demo: when on the waiting screen with no phone, cycle through
+        // the demo scenarios so the screens can be validated without buttons.
+        _demoTimer = new Timer.Timer();
+        _demoTimer.start(method(:onDemoTick), 4000, true);
     }
 
     function onStop(state) {
@@ -61,6 +67,21 @@ class FenixNaviApp extends Application.AppBase {
         if (_updateTimer != null) {
             _updateTimer.stop();
             _updateTimer = null;
+        }
+        if (_demoTimer != null) {
+            _demoTimer.stop();
+            _demoTimer = null;
+        }
+    }
+
+    function onDemoTick() as Void {
+        // Only run on the waiting screen (no active navigation).
+        if (_navData.state == NavigationData.STATE_WAITING) {
+            if (!_demoMode) {
+                enterDemoMode();
+            } else {
+                nextDemoScenario();
+            }
         }
     }
 
@@ -102,6 +123,11 @@ class FenixNaviApp extends Application.AppBase {
         if (msgType == null) {
             System.println("FenixNavi: Message missing 'type' field");
             return;
+        }
+
+        // A real phone message means we're navigating for real - leave demo mode.
+        if (_demoMode) {
+            exitDemoMode();
         }
 
         if (msgType.equals("navigation_update")) {
