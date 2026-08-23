@@ -41,6 +41,16 @@ class FenixNaviView extends WatchUi.View {
 
         var state = _navData.state;
 
+        // If navigating but no message from the phone for a while (e.g. the app
+        // was closed), return to the waiting screen instead of staying stuck.
+        if (state == NavigationData.STATE_NAVIGATING || state == NavigationData.STATE_REROUTING) {
+            var app = Application.getApp();
+            if (app != null && !app.isConnected()) {
+                _navData.state = NavigationData.STATE_WAITING;
+                state = NavigationData.STATE_WAITING;
+            }
+        }
+
         if (state == NavigationData.STATE_WAITING) {
             drawWaitingScreen(dc);
         } else if (state == NavigationData.STATE_NAVIGATING) {
@@ -104,8 +114,12 @@ class FenixNaviView extends WatchUi.View {
                     Lang.format("$1$ to turn", [_navData.distanceText()]),
                     Graphics.TEXT_JUSTIFY_CENTER);
 
-        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
-        drawArrow(dc, _centerX, _centerY - 100, 42, arrowAngle);
+        if (_navData.maneuver != null && _navData.maneuver.equals("roundabout")) {
+            drawRoundabout(dc, _centerX, _centerY - 100, 42, arrowAngle, _navData.roundaboutExit);
+        } else {
+            dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
+            drawArrow(dc, _centerX, _centerY - 100, 42, arrowAngle);
+        }
 
         // Maneuver instruction - wrapped to up to 3 lines so road names fit.
         // Uses the smallest font so descenders (p, g, y) aren't clipped and
@@ -251,6 +265,42 @@ class FenixNaviView extends WatchUi.View {
         var p2x = bx - headWidth * Math.cos(rad);
         var p2y = by - headWidth * Math.sin(rad);
         dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
+    }
+
+    //! Draw a roundabout glyph: a circle with the exit arrow and the exit number.
+    function drawRoundabout(dc, cx, cy, size, angle, exit) {
+        // Roundabout circle
+        dc.setPenWidth(4);
+        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
+        dc.drawCircle(cx, cy, size);
+
+        // Exit arrow inside the circle (angle is the exit direction)
+        var rad = angle * Math.PI / 180.0;
+        var tipX = cx + size * 0.6 * Math.sin(rad);
+        var tipY = cy - size * 0.6 * Math.cos(rad);
+        var tailX = cx - size * 0.2 * Math.sin(rad);
+        var tailY = cy + size * 0.2 * Math.cos(rad);
+
+        dc.setPenWidth(6);
+        dc.drawLine(tailX, tailY, tipX, tipY);
+
+        // Arrowhead
+        var headLen = size * 0.22;
+        var headWidth = size * 0.18;
+        var bx = tipX - headLen * Math.sin(rad);
+        var by = tipY + headLen * Math.cos(rad);
+        var p1x = bx + headWidth * Math.cos(rad);
+        var p1y = by + headWidth * Math.sin(rad);
+        var p2x = bx - headWidth * Math.cos(rad);
+        var p2y = by - headWidth * Math.sin(rad);
+        dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
+
+        // Exit number at the center
+        if (exit != null && exit > 0) {
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+            dc.drawText(cx, cy, Graphics.FONT_XTINY, exit.toString(),
+                        Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
     }
 
     //! Convert the relative turn angle (degrees, 0=straight, +right, -left)

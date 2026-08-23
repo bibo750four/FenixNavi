@@ -23,6 +23,7 @@ class NavigationData {
     var etaMin;
     var turnAngle;
     var wrongDirection;
+    var roundaboutExit;
 
     function initialize() {
         clear();
@@ -42,6 +43,7 @@ class NavigationData {
         etaMin = 0;
         turnAngle = 0;
         wrongDirection = false;
+        roundaboutExit = 0;
     }
 
     //! Update from a dictionary received via PhoneAppMessage.
@@ -61,6 +63,7 @@ class NavigationData {
         v = data["eta_min"];             if (v != null) { etaMin = v; }
         v = data["turn_angle"];          if (v != null) { turnAngle = v; }
         v = data["wrong_direction"];     if (v != null) { wrongDirection = v; }
+        v = data["exit"];                if (v != null) { roundaboutExit = v; }
     }
 
     //! Get a human-readable distance string.

@@ -12,11 +12,13 @@ struct NavigationStep: Codable, Identifiable {
     let endLocation: Coordinate    // Where this step ends
     let geometry: [Coordinate]     // Full polyline of this step (for map-matching)
     let turnAngle: Double          // Relative turn angle in degrees (-180..180), 0=straight
+    let isRoundabout: Bool         // True when this step is a roundabout/rotary maneuver
+    let exit: Int?                 // Roundabout exit number (nil for non-roundabouts)
     var isCompleted: Bool = false
 
     enum CodingKeys: String, CodingKey {
         case instruction, maneuver, streetName, distance, duration
-        case startLocation, endLocation, geometry, turnAngle
+        case startLocation, endLocation, geometry, turnAngle, isRoundabout, exit
     }
 }
 
@@ -115,6 +117,11 @@ struct RouteResponse: Codable {
                 while rawAngle > 180 { rawAngle -= 360 }
                 while rawAngle < -180 { rawAngle += 360 }
 
+                let isRoundabout = step.maneuver.type == "roundabout"
+                    || step.maneuver.type == "rotary"
+                    || step.maneuver.type == "exit roundabout"
+                    || step.maneuver.type == "exit rotary"
+
                 let navStep = NavigationStep(
                     instruction: instructionText,
                     maneuver: normalizeManeuver(type: step.maneuver.type,
@@ -125,7 +132,9 @@ struct RouteResponse: Codable {
                     startLocation: startCoord,
                     endLocation: endCoord,
                     geometry: geometry,
-                    turnAngle: rawAngle
+                    turnAngle: rawAngle,
+                    isRoundabout: isRoundabout,
+                    exit: step.maneuver.exit
                 )
                 steps.append(navStep)
             }

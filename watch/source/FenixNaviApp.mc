@@ -3,6 +3,7 @@ using Toybox.Attention;
 using Toybox.Communications;
 using Toybox.Lang;
 using Toybox.System;
+using Toybox.Timer;
 using Toybox.WatchUi;
 
 //! FenixNavi - Receive turn-by-turn navigation instructions from the iOS companion app.
@@ -17,6 +18,7 @@ class FenixNaviApp extends Application.AppBase {
     hidden var _isConnected;
     hidden var _lastMessageTime;
     hidden var _vibratedForStep;
+    hidden var _updateTimer;
 
     function initialize() {
         AppBase.initialize();
@@ -31,11 +33,30 @@ class FenixNaviApp extends Application.AppBase {
     function onStart(state) {
         // Register for phone app messages
         Communications.registerForPhoneAppMessages(method(:onPhoneMessage));
+
+        // Periodically refresh the view so the connection timeout is enforced
+        // even when no messages arrive (e.g. after the phone app is closed).
+        _updateTimer = new Timer.Timer();
+        _updateTimer.start(method(:onTimeout), 10000, true);
     }
 
     function onStop(state) {
         // Clean up
         Communications.registerForPhoneAppMessages(null);
+        if (_updateTimer != null) {
+            _updateTimer.stop();
+            _updateTimer = null;
+        }
+    }
+
+    function onTimeout() as Void {
+        // Only refresh while navigating, so the view can detect a stale
+        // connection and return to the waiting screen.
+        if (_navData != null &&
+            (_navData.state == NavigationData.STATE_NAVIGATING ||
+             _navData.state == NavigationData.STATE_REROUTING)) {
+            WatchUi.requestUpdate();
+        }
     }
 
     function getInitialView() {

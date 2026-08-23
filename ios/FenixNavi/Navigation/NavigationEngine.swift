@@ -1,5 +1,6 @@
 import Foundation
 import CoreLocation
+import UIKit
 
 /// Core navigation engine.
 ///
@@ -76,6 +77,7 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         let wrongDirection: Bool
         let remainingDistance: Double
         let remainingDuration: Double
+        let exit: Int
     }
 
     // MARK: - Setup
@@ -140,6 +142,10 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             isNavigating = true
             statusText = "Navigating"
 
+            // Keep the screen awake while navigating (avoids the screen locking
+            // and helps keep the app active).
+            UIApplication.shared.isIdleTimerDisabled = true
+
             // Start periodic position updates for step tracking
             startPositionUpdates()
 
@@ -155,6 +161,8 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
     func stopNavigation() {
         isNavigating = false
         isRerouting = false
+        // Allow the screen to lock again once navigation ends.
+        UIApplication.shared.isIdleTimerDisabled = false
         steps = []
         routeSegs = []
         routeTotalLength = 0
@@ -248,7 +256,9 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         case .denied, .restricted:
             statusText = "Location access denied"
         case .notDetermined:
-            locationManager.requestWhenInUseAuthorization()
+            // Request "Always" so navigation keeps updating in the background
+            // (screen locked / app in pocket).
+            locationManager.requestAlwaysAuthorization()
         @unknown default:
             break
         }
@@ -344,29 +354,47 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         let maneuverText: String
         let turnAngle: Int
         let streetName: String
+        let exit: Int
 
         if wrongDir {
             maneuver = "uturn"
             maneuverText = "Turn around"
             turnAngle = 180
             streetName = ""
+            exit = 0
         } else if let turn {
             let road = roadNameAt(turn.at)
-            let a = abs(turn.angle)
-            let dir = turn.angle > 0 ? "right" : "left"
-            let strength: String
-            if a <= 60 { strength = "Bear " }
-            else if a <= 120 { strength = "Turn " }
-            else { strength = "Sharp " }
-            maneuver = "turn_\(dir)"
-            maneuverText = "\(strength)\(dir) onto \(road)"
-            turnAngle = Int(turn.angle)
-            streetName = road
+            let turnStepIndex = stepIndexAt(turn.at)
+            let isRoundabout = steps[turnStepIndex].isRoundabout
+                || (turnStepIndex + 1 < steps.count && steps[turnStepIndex + 1].isRoundabout)
+
+            if isRoundabout {
+                // Roundabout: use the net exit direction (approach -> exit road)
+                // rather than the raw entry-curve angle, which is misleading.
+                exit = steps[turnStepIndex].exit ?? 0
+                maneuver = "roundabout"
+                maneuverText = "Roundabout, take exit \(exit) onto \(road)"
+                turnAngle = roundaboutExitAngle(at: turn.at)
+                streetName = road
+            } else {
+                exit = 0
+                let a = abs(turn.angle)
+                let dir = turn.angle > 0 ? "right" : "left"
+                let strength: String
+                if a <= 60 { strength = "Bear " }
+                else if a <= 120 { strength = "Turn " }
+                else { strength = "Sharp " }
+                maneuver = "turn_\(dir)"
+                maneuverText = "\(strength)\(dir) onto \(road)"
+                turnAngle = Int(turn.angle)
+                streetName = road
+            }
         } else {
             maneuver = "arrive"
             maneuverText = "Arrive at destination"
             turnAngle = 0
             streetName = ""
+            exit = 0
         }
 
         return ManeuverInfo(
@@ -377,7 +405,8 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             distanceToTurn: distanceToTurn,
             wrongDirection: wrongDir,
             remainingDistance: remainingDistance,
-            remainingDuration: remainingDuration
+            remainingDuration: remainingDuration,
+            exit: exit
         )
     }
 
@@ -403,6 +432,7 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             "duration_s": Int(info.remainingDuration),
             "turn_angle": info.turnAngle,
             "wrong_direction": info.wrongDirection,
+            "exit": info.exit,
             "total_distance_km": info.remainingDistance / 1000.0,
             "total_duration_min": Int(info.remainingDuration / 60.0),
             "eta_min": Int(info.remainingDuration / 60.0)
@@ -521,6 +551,42 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             if s < seg.end { return steps[seg.stepIndex].streetName }
         }
         return steps[steps.count - 1].streetName
+    }
+
+    /// Net exit direction (degrees, 0=straight, +right, -left) for a roundabout,
+    /// computed from the approach road bearing to the exit road bearing.
+    private func roundaboutExitAngle(at turnS: Double) -> Int {
+        let stepIndex = stepIndexAt(turnS)
+
+        // Approach bearing: from the segment just before the roundabout step
+        var approach: Double?
+        if stepIndex > 0 {
+            let prev = steps[stepIndex - 1]
+            if prev.geometry.count >= 2 {
+                approach = bearingBetween(prev.geometry[prev.geometry.count - 2],
+                                          prev.geometry[prev.geometry.count - 1])
+            }
+        }
+        if approach == nil, steps[stepIndex].geometry.count >= 2 {
+            approach = bearingBetween(steps[stepIndex].geometry[0],
+                                      steps[stepIndex].geometry[1])
+        }
+
+        // Exit bearing: from the segment just after the roundabout step
+        var exitBearing: Double?
+        if stepIndex + 1 < steps.count {
+            let next = steps[stepIndex + 1]
+            if next.geometry.count >= 2 {
+                exitBearing = bearingBetween(next.geometry[0], next.geometry[1])
+            }
+        }
+        if exitBearing == nil, steps[stepIndex].geometry.count >= 2 {
+            let g = steps[stepIndex].geometry
+            exitBearing = bearingBetween(g[g.count - 2], g[g.count - 1])
+        }
+
+        guard let a = approach, let b = exitBearing else { return 0 }
+        return Int(normalizeAngle(b - a))
     }
 
     /// Recalculate the route from the current position to the destination.
