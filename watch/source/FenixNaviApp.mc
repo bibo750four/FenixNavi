@@ -75,13 +75,12 @@ class FenixNaviApp extends Application.AppBase {
     }
 
     function onDemoTick() as Void {
-        // Only run on the waiting screen (no active navigation).
-        if (_navData.state == NavigationData.STATE_WAITING) {
-            if (!_demoMode) {
-                enterDemoMode();
-            } else {
-                nextDemoScenario();
-            }
+        // While in demo mode, keep advancing scenarios. Otherwise, if we're on
+        // the waiting screen with no phone, start the demo automatically.
+        if (_demoMode) {
+            nextDemoScenario();
+        } else if (_navData.state == NavigationData.STATE_WAITING) {
+            enterDemoMode();
         }
     }
 
