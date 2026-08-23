@@ -273,22 +273,25 @@ class FenixNaviView extends WatchUi.View {
         dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
     }
 
-    //! Draw a roundabout glyph: a circle with the exit arrow and the exit number.
+    //! Draw a roundabout glyph: a small circle with the exit arrow pointing
+    //! outward (outside the circle) and the exit number inside.
     function drawRoundabout(dc, cx, cy, size, angle, exit) {
-        // Roundabout circle
+        // Roundabout circle (smaller so the arrow can stick out)
+        var circleR = size * 0.5;
         dc.setPenWidth(4);
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
-        dc.drawCircle(cx, cy, size);
+        dc.drawCircle(cx, cy, circleR);
 
-        // Exit arrow inside the circle (angle is the exit direction)
+        // Exit arrow: starts at the circle edge and points outward in the exit
+        // direction, so the arrow is outside the circle.
         var rad = angle * Math.PI / 180.0;
-        var tipX = cx + size * 0.6 * Math.sin(rad);
-        var tipY = cy - size * 0.6 * Math.cos(rad);
-        var tailX = cx - size * 0.2 * Math.sin(rad);
-        var tailY = cy + size * 0.2 * Math.cos(rad);
+        var tipX = cx + (circleR + size * 0.42) * Math.sin(rad);
+        var tipY = cy - (circleR + size * 0.42) * Math.cos(rad);
+        var tailX = cx + circleR * Math.sin(rad);
+        var tailY = cy - circleR * Math.cos(rad);
 
         // Shaft ends at the triangle base so the head covers the tip cleanly
-        var headLen = size * 0.22;
+        var headLen = size * 0.26;
         var baseX = tipX - headLen * Math.sin(rad);
         var baseY = tipY + headLen * Math.cos(rad);
 
@@ -296,14 +299,14 @@ class FenixNaviView extends WatchUi.View {
         dc.drawLine(tailX, tailY, baseX, baseY);
 
         // Arrowhead
-        var headWidth = size * 0.18;
+        var headWidth = size * 0.22;
         var p1x = baseX + headWidth * Math.cos(rad);
         var p1y = baseY + headWidth * Math.sin(rad);
         var p2x = baseX - headWidth * Math.cos(rad);
         var p2y = baseY - headWidth * Math.sin(rad);
         dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
 
-        // Exit number at the center
+        // Exit number at the center (inside the circle, clear of the arrow)
         if (exit != null && exit > 0) {
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
             dc.drawText(cx, cy, Graphics.FONT_XTINY, exit.toString(),
