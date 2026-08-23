@@ -114,9 +114,9 @@ class FenixNaviView extends WatchUi.View {
             arrowAngle = 180;  // point down = turn around
             maneuverText = "Turn around";
         }
-        // Distance to next turn - placed near the top, close to the green arc
+        // Distance to next turn - placed near the top, clear of the glyph
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_BLACK);
-        dc.drawText(_centerX, _centerY - 167, Graphics.FONT_XTINY,
+        dc.drawText(_centerX, _centerY - 182, Graphics.FONT_XTINY,
                     Lang.format("$1$ to turn", [_navData.distanceText()]),
                     Graphics.TEXT_JUSTIFY_CENTER);
 
@@ -256,20 +256,20 @@ class FenixNaviView extends WatchUi.View {
         var tailX = cx - size * 0.5 * Math.sin(rad);
         var tailY = cy + size * 0.5 * Math.cos(rad);
 
-        // Shaft (thinner so the head is clearly visible)
-        dc.setPenWidth(7);
-        dc.drawLine(tailX, tailY, tipX, tipY);
-
-        // Filled triangular head, larger than the shaft width so it reads as
-        // an arrowhead (fillPolygon takes an array of [x, y] points)
+        // Shaft ends at the triangle base so the head covers the tip cleanly
         var headLen = size * 0.42;
+        var baseX = tipX - headLen * Math.sin(rad);
+        var baseY = tipY + headLen * Math.cos(rad);
+
+        dc.setPenWidth(7);
+        dc.drawLine(tailX, tailY, baseX, baseY);
+
+        // Filled triangular head (fillPolygon takes an array of [x, y] points)
         var headWidth = size * 0.36;
-        var bx = tipX - headLen * Math.sin(rad);
-        var by = tipY + headLen * Math.cos(rad);
-        var p1x = bx + headWidth * Math.cos(rad);
-        var p1y = by + headWidth * Math.sin(rad);
-        var p2x = bx - headWidth * Math.cos(rad);
-        var p2y = by - headWidth * Math.sin(rad);
+        var p1x = baseX + headWidth * Math.cos(rad);
+        var p1y = baseY + headWidth * Math.sin(rad);
+        var p2x = baseX - headWidth * Math.cos(rad);
+        var p2y = baseY - headWidth * Math.sin(rad);
         dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
     }
 
@@ -287,18 +287,20 @@ class FenixNaviView extends WatchUi.View {
         var tailX = cx - size * 0.2 * Math.sin(rad);
         var tailY = cy + size * 0.2 * Math.cos(rad);
 
+        // Shaft ends at the triangle base so the head covers the tip cleanly
+        var headLen = size * 0.22;
+        var baseX = tipX - headLen * Math.sin(rad);
+        var baseY = tipY + headLen * Math.cos(rad);
+
         dc.setPenWidth(6);
-        dc.drawLine(tailX, tailY, tipX, tipY);
+        dc.drawLine(tailX, tailY, baseX, baseY);
 
         // Arrowhead
-        var headLen = size * 0.22;
         var headWidth = size * 0.18;
-        var bx = tipX - headLen * Math.sin(rad);
-        var by = tipY + headLen * Math.cos(rad);
-        var p1x = bx + headWidth * Math.cos(rad);
-        var p1y = by + headWidth * Math.sin(rad);
-        var p2x = bx - headWidth * Math.cos(rad);
-        var p2y = by - headWidth * Math.sin(rad);
+        var p1x = baseX + headWidth * Math.cos(rad);
+        var p1y = baseY + headWidth * Math.sin(rad);
+        var p2x = baseX - headWidth * Math.cos(rad);
+        var p2y = baseY - headWidth * Math.sin(rad);
         dc.fillPolygon([[tipX, tipY], [p1x, p1y], [p2x, p2y]]);
 
         // Exit number at the center
