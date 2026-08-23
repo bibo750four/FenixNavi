@@ -42,6 +42,7 @@
     <button id="btnDest">Set Destination</button>
     <button id="btnSim" class="active">Simulate Position</button>
     <button id="btnRoute" class="danger">Calculate Route</button>
+    <button id="btnBroadcast">Broadcast to Watch</button>
     <div class="legend">Click map to set the active point. Start = green, Destination = red, Position = blue.</div>
   </div>
 
@@ -98,6 +99,7 @@ let simPos = null;       // [lon, lat]
 let routeSteps = [];     // parsed OSRM steps
 let routeLine = null;
 let mode = 'sim';        // 'start' | 'dest' | 'sim'
+let broadcastEnabled = false;  // send navigation_update to the CIQ bridge
 
 const startMarker = L.marker([0,0], {icon: L.divIcon({className:'', html:'<div style="background:#2a6;border-radius:50%;width:14px;height:14px;border:2px solid #fff"></div>'})}).addTo(map).setLatLng([0,0]).setOpacity(0);
 const destMarker = L.marker([0,0], {icon: L.divIcon({className:'', html:'<div style="background:#c33;border-radius:50%;width:14px;height:14px;border:2px solid #fff"></div>'})}).addTo(map).setLatLng([0,0]).setOpacity(0);
@@ -391,18 +393,25 @@ function updateIndications(){
   let maneuverText;
   let turnAngleText;
   let distToTurn;
+  let turnAngleDeg = 0;
+  let maneuver = 'arrive';
+  let streetName = step.name || '';
 
   if(wrongDir){
     arrowAngle = 180;
     maneuverText = 'Turn around';
     turnAngleText = '—';
     distToTurn = turn ? turn.distance : 0;
+    maneuver = 'uturn';
+    turnAngleDeg = 180;
   } else if(!turn){
     // No turn ahead: heading straight to the destination.
     arrowAngle = 0;
     maneuverText = 'Arrive at destination';
     turnAngleText = '—';
     distToTurn = Math.max(0, routeInfo[routeInfo.length-1].end - s);
+    maneuver = 'arrive';
+    turnAngleDeg = 0;
   } else {
     // A real turn detected from the geometry (works even when OSRM labels the
     // step "continue", e.g. a left turn onto a different branch of the same road).
@@ -417,6 +426,9 @@ function updateIndications(){
     arrowAngle = ((turn.angle%360)+360)%360;
     turnAngleText = turn.angle+'°';
     distToTurn = turn.distance;
+    maneuver = 'turn_' + dir;
+    turnAngleDeg = turn.angle;
+    streetName = road;
   }
 
   document.getElementById('arrow').textContent = arrowGlyph(arrowAngle);
@@ -437,6 +449,34 @@ function updateIndications(){
   document.getElementById('dbgPerp').textContent = 'perp dist to route: '+Math.round(proj.perp)+'m';
   document.getElementById('dbgRouteBearing').textContent = 'route bearing: '+(routeBearing==null?'—':Math.round(routeBearing)+'°');
   document.getElementById('dbgCourse').textContent = 'heading: '+heading+'°';
+
+  broadcastToWatch({maneuver, maneuverText, streetName, distToTurn, turnAngleDeg, wrongDir, index, remDist, remDur});
+}
+
+// Send the current navigation indication to the CIQ bridge (local relay),
+// which injects it into the Connect IQ Simulator.
+function broadcastToWatch(msg){
+  if(!broadcastEnabled) return;
+  const payload = {
+    type: 'navigation_update',
+    maneuver: msg.maneuver,
+    maneuver_text: msg.maneuverText,
+    street_name: msg.streetName,
+    distance_m: Math.round(msg.distToTurn),
+    eta_min: Math.round(msg.remDur/60),
+    step_index: msg.index,
+    total_steps: routeSteps.length,
+    turn_angle: Math.round(msg.turnAngleDeg),
+    wrong_direction: msg.wrongDir,
+    exit: 0,
+    total_distance_km: +(msg.remDist/1000).toFixed(3),
+    total_duration_min: Math.round(msg.remDur/60)
+  };
+  fetch('http://localhost:8765/message', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).catch(e=>console.error('broadcast failed', e));
 }
 
 // ---------- Walk along route ----------
@@ -502,6 +542,12 @@ document.getElementById('btnStart').onclick=()=>{ mode='start'; setActive('btnSt
 document.getElementById('btnDest').onclick=()=>{ mode='dest'; setActive('btnDest'); };
 document.getElementById('btnSim').onclick=()=>{ mode='sim'; setActive('btnSim'); };
 document.getElementById('btnRoute').onclick=calculateRoute;
+document.getElementById('btnBroadcast').onclick=()=>{
+  broadcastEnabled = !broadcastEnabled;
+  document.getElementById('btnBroadcast').classList.toggle('active', broadcastEnabled);
+  setStatus(broadcastEnabled ? 'Broadcasting to watch...' : 'Broadcast off');
+  if(broadcastEnabled && simPos) updateIndications();
+};
 document.getElementById('heading').oninput=(e)=>{ document.getElementById('headingVal').textContent=e.target.value+'°'; setHeadingRotation(parseInt(e.target.value)); if(simPos) updateIndications(); };
 document.getElementById('btnFwd').onclick=()=>walkAlongRoute(50);
 document.getElementById('btnBack').onclick=()=>walkAlongRoute(-50);
