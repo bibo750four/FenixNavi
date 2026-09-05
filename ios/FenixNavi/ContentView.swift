@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 /// Main view for the FenixNavi iOS companion app.
 ///
@@ -16,6 +17,7 @@ struct ContentView: View {
     @State private var selectedDestination: GeocodingResult?
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showRouteMap = false
 
     var body: some View {
         NavigationStack {
@@ -110,6 +112,26 @@ struct ContentView: View {
                 .disabled(searchQuery.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal)
+
+            // Route confirmation minimap (below the search bar)
+            if !navEngine.routeCoordinates.isEmpty {
+                Button {
+                    showRouteMap.toggle()
+                } label: {
+                    Label(showRouteMap ? "Hide route map" : "Show route map",
+                          systemImage: showRouteMap ? "map.fill" : "map")
+                        .font(.caption)
+                }
+                .padding(.horizontal)
+
+                if showRouteMap {
+                    RouteMapView(route: navEngine.routeCoordinates,
+                                 current: navEngine.currentCoordinate,
+                                 destination: navEngine.destinationCoordinate)
+                        .padding(.horizontal)
+                        .padding(.top, 4)
+                }
+            }
 
             if isSearching {
                 ProgressView("Searching...")
@@ -230,6 +252,24 @@ struct ContentView: View {
                     .padding()
             }
 
+            // Route confirmation minimap (below the navigation info)
+            Button {
+                showRouteMap.toggle()
+            } label: {
+                Label(showRouteMap ? "Hide route map" : "Show route map",
+                      systemImage: showRouteMap ? "map.fill" : "map")
+                    .font(.caption)
+            }
+            .padding(.top, 8)
+
+            if showRouteMap {
+                RouteMapView(route: navEngine.routeCoordinates,
+                             current: navEngine.currentCoordinate,
+                             destination: navEngine.destinationCoordinate)
+                    .padding(.horizontal)
+                    .padding(.top, 4)
+            }
+
             // Destination
             Text("To: \(navEngine.destinationName)")
                 .font(.caption)
@@ -326,6 +366,67 @@ struct ContentView: View {
             return String(format: "%.1f km", meters / 1000)
         }
         return "\(Int(meters)) m"
+    }
+}
+
+/// A compact map showing the route polyline, current position, and destination.
+/// Used for the initial confirmation that the routing looks plausible.
+struct RouteMapView: View {
+    let route: [CLLocationCoordinate2D]
+    let current: CLLocationCoordinate2D?
+    let destination: CLLocationCoordinate2D?
+
+    @State private var cameraPosition: MapCameraPosition = .automatic
+
+    var body: some View {
+        Map(position: $cameraPosition) {
+            if let current {
+                Annotation("You", coordinate: current) {
+                    Image(systemName: "location.fill")
+                        .foregroundColor(.blue)
+                        .padding(4)
+                        .background(Circle().fill(.white))
+                }
+            }
+            if let destination {
+                Annotation("Destination", coordinate: destination) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.red)
+                }
+            }
+            MapPolyline(coordinates: route)
+                .stroke(.blue, lineWidth: 4)
+        }
+        .frame(height: 220)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onAppear { fitRoute() }
+    }
+
+    /// Fit the camera to the route bounds (plus current position and destination).
+    private func fitRoute() {
+        guard !route.isEmpty else { return }
+        var minLat = route[0].latitude, maxLat = route[0].latitude
+        var minLon = route[0].longitude, maxLon = route[0].longitude
+        for c in route {
+            minLat = min(minLat, c.latitude); maxLat = max(maxLat, c.latitude)
+            minLon = min(minLon, c.longitude); maxLon = max(maxLon, c.longitude)
+        }
+        for extra in [current, destination] {
+            if let e = extra {
+                minLat = min(minLat, e.latitude); maxLat = max(maxLat, e.latitude)
+                minLon = min(minLon, e.longitude); maxLon = max(maxLon, e.longitude)
+            }
+        }
+        let centerLat = (minLat + maxLat) / 2
+        let centerLon = (minLon + maxLon) / 2
+        let spanLat = max(maxLat - minLat, 0.002) * 1.3
+        let spanLon = max(maxLon - minLon, 0.002) * 1.3
+        let region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: centerLat, longitude: centerLon),
+            span: MKCoordinateSpan(latitudeDelta: spanLat, longitudeDelta: spanLon)
+        )
+        cameraPosition = .region(region)
     }
 }
 

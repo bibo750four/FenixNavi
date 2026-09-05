@@ -7,6 +7,27 @@ ios/DerivedData/
 ios/**/xcuserdata/
 *.xcuserstate
 *.xcscmblueprint
+*.xcworkspace
+*.xccheckout
+
+# Xcode build artifacts
+build/
+dist/
+*.log
+*.swp
+*.bak
+*.tmp
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependency managers
+Carthage/
+Pods/
+node_modules/
 
 # Connect IQ build artifacts
 watch/FenixNavi.prg

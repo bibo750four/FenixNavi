@@ -45,9 +45,14 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var steps: [NavigationStep] = []
     private var currentLocation: CLLocation?
     private var destination: CLLocationCoordinate2D?
+    // Destination chosen before the watch was connected / GPS was ready, kept
+    // so navigation can start automatically once both are available.
+    private var pendingDestination: CLLocationCoordinate2D?
+    private var pendingDestinationName: String?
     private var updateTimer: Timer?
     private var lastSentDistanceM: Int = -1
     private var lastSentStepIndex: Int = -1
+    private var lastSendTime: Date = .distantPast
     private var lastRerouteTime: Date = .distantPast
 
     // Geometry-based route segments (built from all steps) for turn detection.
@@ -89,17 +94,38 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.distanceFilter = 3  // Update every 3 meters for smooth tracking
         locationManager.allowsBackgroundLocationUpdates = true
         locationManager.showsBackgroundLocationIndicator = true
+        // Keep delivering fixes during navigation even if the user pauses
+        // briefly, so the watch keeps getting updates while the screen is locked.
+        locationManager.pausesLocationUpdatesAutomatically = false
     }
 
     // MARK: - Public API
 
     /// Start navigating to a destination.
+    ///
+    /// The destination is remembered even if navigation can't begin immediately
+    /// (e.g. the watch isn't connected yet), so it isn't lost. Navigation starts
+    /// automatically once the watch connects and a GPS fix is available.
     func startNavigation(to destination: CLLocationCoordinate2D, name: String) async {
+        // Remember the destination so it isn't lost if we can't start right away.
+        pendingDestination = destination
+        pendingDestinationName = name
+
         // Make sure GPS is running (it may have been turned off after a previous
         // navigation session).
         if !isGPSActive {
             startGPS()
         }
+
+        await beginNavigationIfReady()
+    }
+
+    /// Start navigation to the pending destination once the watch is connected
+    /// and a usable GPS fix is available. Called when a destination is picked,
+    /// when the watch connects, and when a GPS fix arrives.
+    private func beginNavigationIfReady() async {
+        guard let destination = pendingDestination else { return }
+        let name = pendingDestinationName ?? ""
 
         // Require the watch to be connected first so messages aren't lost
         guard watchConnected else {
@@ -115,6 +141,10 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             statusText = "Waiting for accurate GPS..."
             return
         }
+
+        // We're ready - clear the pending destination so this only runs once.
+        pendingDestination = nil
+        pendingDestinationName = nil
 
         destinationName = name
         self.destination = destination
@@ -169,6 +199,8 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         currentStep = nil
         currentStepIndex = 0
         totalSteps = 0
+        pendingDestination = nil
+        pendingDestinationName = nil
         statusText = "Ready"
         updateTimer?.invalidate()
         updateTimer = nil
@@ -195,6 +227,23 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         garminBridge.showDeviceSelection()
     }
 
+    // MARK: - Route data for the minimap
+
+    /// Full route polyline (all step geometries concatenated) for the minimap.
+    var routeCoordinates: [CLLocationCoordinate2D] {
+        steps.flatMap { step in
+            step.geometry.map {
+                CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+            }
+        }
+    }
+
+    /// Current GPS position (for the minimap marker).
+    var currentCoordinate: CLLocationCoordinate2D? { currentLocation?.coordinate }
+
+    /// Destination coordinate (for the minimap marker).
+    var destinationCoordinate: CLLocationCoordinate2D? { destination }
+
     /// Start GPS location updates (e.g. when starting navigation).
     func startGPS() {
         locationManager.startUpdatingLocation()
@@ -219,6 +268,9 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
             garminBridge.openAppWhenReady { success in
                 print("FenixNavi: App open result: \(success)")
             }
+            // If a destination was chosen before the watch was connected, start
+            // navigating now that the watch is available.
+            Task { await self.beginNavigationIfReady() }
         }
     }
 
@@ -273,6 +325,12 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
 
         currentLocation = location
+
+        // If a destination is pending (e.g. waiting for the watch or a GPS fix),
+        // try to start navigation now that we have a usable location.
+        if pendingDestination != nil {
+            Task { await self.beginNavigationIfReady() }
+        }
 
         guard isNavigating, !steps.isEmpty, !isRerouting else { return }
 
@@ -415,11 +473,16 @@ class NavigationEngine: NSObject, ObservableObject, CLLocationManagerDelegate {
         let distM = Int(info.distanceToTurn)
 
         // Throttle: only send when the step or distance changes meaningfully.
-        if currentStepIndex == lastSentStepIndex && distM == lastSentDistanceM {
+        // But always send at least every 15s (a heartbeat) so the watch doesn't
+        // time out and return to the waiting screen while the user is stationary.
+        let changed = currentStepIndex != lastSentStepIndex || distM != lastSentDistanceM
+        let heartbeatDue = Date().timeIntervalSince(lastSendTime) >= 15
+        if !changed && !heartbeatDue {
             return
         }
         lastSentStepIndex = currentStepIndex
         lastSentDistanceM = distM
+        lastSendTime = Date()
 
         let message: [String: Any] = [
             "type": "navigation_update",

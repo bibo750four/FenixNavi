@@ -23,10 +23,13 @@
     <key>LSRequiresIPhoneOS</key>
     <true/>
 
-    <!-- Background modes: audio and location for navigation -->
+    <!-- Background modes: location for navigation, bluetooth-central so the
+         BLE connection to the watch keeps working while the screen is locked,
+         and audio (reserved). -->
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>
+        <string>bluetooth-central</string>
         <string>audio</string>
     </array>
 
